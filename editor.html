@@ -25,7 +25,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 
 main{display:flex;flex:1;overflow:hidden}
 
-#cfg{width:380px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto}
+#cfg{width:530px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto}
 #cfg::-webkit-scrollbar{width:5px}
 #cfg::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
@@ -248,12 +248,14 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 .stat-ab-name-inp{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 6px;font-size:12px;outline:none;min-width:0}
 .stat-del-btn{background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);width:22px;height:22px;font-size:14px;cursor:pointer;line-height:1;flex-shrink:0;transition:border-color .15s,color .15s;padding:0;display:flex;align-items:center;justify-content:center}
 .stat-del-btn:hover{border-color:var(--danger);color:var(--danger)}
-.stats-col-heads{display:grid;grid-template-columns:34px 1fr 60px 60px 22px;gap:5px;margin-bottom:3px}
+.stats-col-heads{display:grid;grid-template-columns:34px 1.4fr 1fr 1fr 22px;gap:5px;margin-bottom:3px}
 .stats-col-head{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:center}
-/* Fix: global input[type=text]{width:100%} overrides flex sizing — restore auto for stat inputs */
-#stats-rows-wrap input[type=text],#stats-abilities-wrap input[type=text]{width:auto}
-/* Mode selector reuses fp-btn; share skin/mode/shape button style */
-.mode-btns{display:flex;gap:5px;flex-wrap:wrap}
+/* Fix: override global input[type=text]{width:100%} for stat editor inputs */
+.stat-icon-inp{width:34px!important;flex:0 0 34px!important}
+.stat-label-inp{width:0!important}
+.stat-val-inp{width:0!important}
+.stat-bonus-inp{width:0!important}
+.stat-ab-name-inp{width:0!important}
 </style>
 </head>
 <body>
