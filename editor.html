@@ -531,6 +531,13 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
       <div class="tog-row"><span class="tog-lbl">Show stats card after level-up</span><label class="toggle"><input type="checkbox" id="fx-stats" onchange="onStatsToggle()"><span class="trk"></span></label></div>
       <div id="stats-content" style="display:none">
         <div class="fhint tip" style="margin-top:4px">📊 The card appears alongside the CTA button after transformation, showing upgraded stats + abilities.</div>
+        <div>
+          <div class="flabel" style="margin-top:8px">Card Style</div>
+          <div class="font-presets" id="stats-skin-btns">
+            <button class="fp-btn active" data-sk="game" onclick="onStatsSkin('game')" style="font-size:11px">🎮 Game</button>
+            <button class="fp-btn" data-sk="dark" onclick="onStatsSkin('dark')" style="font-size:11px">🌑 Minimal</button>
+          </div>
+        </div>
         <div class="flabel" style="margin-top:10px">Stats Rows</div>
         <div class="stats-col-heads">
           <div class="stats-col-head">Icon</div>
@@ -621,6 +628,13 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
         <div class="sl-row">
           <input type="range" id="sl-cta-sz" min="60" max="140" value="100" oninput="onCtaStyle()">
           <div class="sl-val" id="cta-sz-val">100%</div>
+        </div>
+      </div>
+      <div>
+        <div class="flabel">Button Shape</div>
+        <div class="font-presets" id="cta-shape-btns">
+          <button class="fp-btn active" data-sh="pill" onclick="onCtaShape('pill')" style="font-size:11px">💊 Pill</button>
+          <button class="fp-btn" data-sh="rounded" onclick="onCtaShape('rounded')" style="font-size:11px">▭ Rounded</button>
         </div>
       </div>
       <div>
@@ -837,6 +851,7 @@ var S = {
   ctaTextColor:'#ffffff',
   ctaSize:100,
   ctaBottom:20,
+  ctaShape:'pill',     // 'pill' | 'rounded'
   // v5.3 — effects
   lvUnitGlow:false,
   lvBlend:40,
@@ -853,6 +868,7 @@ var S = {
     {icon:'🪨',name:'Stone Skin'},
     {icon:'💔',name:'Emotional Damage'}
   ],
+  statsSkin:'game',    // 'game' | 'dark'
   // v5.1 — per-orientation layout
   perOrient:{
     portrait:  makeOrientState(72, 72, 50),
@@ -1672,6 +1688,10 @@ function syncUIFromState(){
   // Per-orientation sliders + pos fields
   syncSlidersToOrientation();
 
+  // Stats skin + CTA shape buttons
+  document.querySelectorAll('[data-sk]').forEach(function(b){b.classList.toggle('active',b.dataset.sk===s.statsSkin);});
+  document.querySelectorAll('[data-sh]').forEach(function(b){b.classList.toggle('active',b.dataset.sh===s.ctaShape);});
+
   // Stats rows UI
   renderStatsRows();
 }
@@ -1682,6 +1702,16 @@ function syncUIFromState(){
 function onStatsToggle(){
   S.statsEnabled=document.getElementById('fx-stats').checked;
   document.getElementById('stats-content').style.display=S.statsEnabled?'':'none';
+  refreshPreview();
+}
+function onStatsSkin(skin){
+  S.statsSkin=skin;
+  document.querySelectorAll('[data-sk]').forEach(function(b){b.classList.toggle('active',b.dataset.sk===skin);});
+  refreshPreview();
+}
+function onCtaShape(shape){
+  S.ctaShape=shape;
+  document.querySelectorAll('[data-sh]').forEach(function(b){b.classList.toggle('active',b.dataset.sh===shape);});
   refreshPreview();
 }
 
@@ -1774,17 +1804,19 @@ var FONT_PRESETS=[
   {id:'custom', label:'Custom ↑'}
 ];
 var CTA_SCHEMES={
-  orange:{bg:'linear-gradient(135deg,#ff7a00,#ffb300)',text:'#2a0800',shadow:'rgba(255,120,0,.55)'},
-  blue:  {bg:'linear-gradient(135deg,#1877f2,#4299e1)',text:'#ffffff',shadow:'rgba(24,119,242,.5)'},
-  green: {bg:'linear-gradient(135deg,#22c55e,#4ade80)',text:'#ffffff',shadow:'rgba(34,197,94,.5)'},
-  purple:{bg:'linear-gradient(135deg,#7c3aed,#a855f7)',text:'#ffffff',shadow:'rgba(124,58,237,.5)'}
+  orange:    {bg:'linear-gradient(135deg,#ff7a00,#ffb300)',text:'#2a0800',shadow:'rgba(255,120,0,.55)'},
+  blue:      {bg:'linear-gradient(135deg,#1877f2,#4299e1)',text:'#ffffff',shadow:'rgba(24,119,242,.5)'},
+  green:     {bg:'linear-gradient(135deg,#22c55e,#4ade80)',text:'#ffffff',shadow:'rgba(34,197,94,.5)'},
+  purple:    {bg:'linear-gradient(135deg,#7c3aed,#a855f7)',text:'#ffffff',shadow:'rgba(124,58,237,.5)'},
+  'game-green':{bg:'linear-gradient(180deg,#5fe000,#38a800)',text:'#ffffff',shadow:'rgba(70,200,0,.65)'}
 };
 var CTA_SWATCH_DEFS=[
-  {id:'orange',label:'Orange',bar:'linear-gradient(90deg,#ff7a00,#ffb300)'},
-  {id:'blue',  label:'Blue',  bar:'linear-gradient(90deg,#1877f2,#4299e1)'},
-  {id:'green', label:'Green', bar:'linear-gradient(90deg,#22c55e,#4ade80)'},
-  {id:'purple',label:'Purple',bar:'linear-gradient(90deg,#7c3aed,#a855f7)'},
-  {id:'custom',label:'Custom',bar:'linear-gradient(90deg,#888,#aaa)'}
+  {id:'orange',    label:'Orange', bar:'linear-gradient(90deg,#ff7a00,#ffb300)'},
+  {id:'blue',      label:'Blue',   bar:'linear-gradient(90deg,#1877f2,#4299e1)'},
+  {id:'green',     label:'Green',  bar:'linear-gradient(90deg,#22c55e,#4ade80)'},
+  {id:'purple',    label:'Purple', bar:'linear-gradient(90deg,#7c3aed,#a855f7)'},
+  {id:'game-green',label:'🎮 Game', bar:'linear-gradient(90deg,#5fe000,#38a800)'},
+  {id:'custom',    label:'Custom', bar:'linear-gradient(90deg,#888,#aaa)'}
 ];
 
 // drag script — injected only into preview iframe
@@ -1897,28 +1929,58 @@ function buildAd(network){
   var ctaFontPx=Math.round(15*ctaSzF);
   var ctaPadPx=Math.round(15*ctaSzF);
   var ctaMaxW=Math.round(320*ctaSzF);
+  var ctaRadius=(s.ctaShape==='rounded')?'10px':'50px';
 
   // ── v6.0: Stats card ─────────────────────────────────────
   var statsHtml='', statsCss='';
   if(s.statsEnabled&&s.statsRows&&s.statsRows.length>0){
     var ctaBtnH=Math.round(ctaPadPx*2+ctaFontPx*1.5);
     var scBottom=s.ctaBottom+ctaBtnH+8;
-    statsCss=
-      '#sc{position:fixed;bottom:'+scBottom+'px;left:50%;transform:translateX(-50%);'+
-      'width:min(90vw,300px);background:rgba(6,3,18,0.9);'+
-      'border:1px solid rgba(200,160,60,0.4);border-radius:14px;'+
-      'padding:10px 14px 8px;opacity:0;pointer-events:none;z-index:12;'+
-      'transition:opacity .5s .2s;font-family:'+fontFamily+'}\n'+
-      '#sc.vis{opacity:1}\n'+
-      '.sc-row{display:flex;align-items:center;gap:8px;padding:2px 0}\n'+
-      '.sc-icon{width:18px;text-align:center;flex-shrink:0;font-size:13px}\n'+
-      '.sc-label{color:rgba(210,200,255,0.6);flex:1;text-transform:uppercase;letter-spacing:.5px;font-size:9px}\n'+
-      '.sc-val{font-size:12px;font-weight:700;color:#fff}\n'+
-      '.sc-bonus{font-size:11px;color:#44e890;font-weight:700;margin-left:3px}\n'+
-      '.sc-div{border:none;border-top:1px solid rgba(255,255,255,0.1);margin:5px 0}\n'+
-      '.sc-abilities{display:flex;flex-wrap:wrap;gap:4px}\n'+
-      '.sc-ability{font-size:10px;background:rgba(255,180,0,0.12);border:1px solid rgba(255,180,0,0.35);'+
-      'border-radius:20px;padding:2px 9px;color:#ffd060}\n';
+    if(s.statsSkin==='game'){
+      // ── Game-style skin: dark brown + gold border ──────
+      statsCss=
+        '#sc{position:fixed;bottom:'+scBottom+'px;left:50%;transform:translateX(-50%);'+
+        'width:min(92vw,310px);'+
+        'background:linear-gradient(180deg,#3a2008 0%,#1c1004 100%);'+
+        'border:2px solid #a07820;'+
+        'box-shadow:0 0 0 1px #3a2000,0 8px 28px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,200,50,.1);'+
+        'border-radius:10px;overflow:hidden;'+
+        'opacity:0;pointer-events:none;z-index:12;'+
+        'transition:opacity .5s .2s;font-family:'+fontFamily+'}\n'+
+        '#sc.vis{opacity:1}\n'+
+        '.sc-row{display:flex;align-items:center;gap:8px;padding:5px 12px;'+
+        'border-bottom:1px solid rgba(160,100,0,.3)}\n'+
+        '.sc-row:last-of-type{border-bottom:none}\n'+
+        '.sc-icon{width:22px;text-align:center;flex-shrink:0;font-size:16px}\n'+
+        '.sc-label{color:#d4a040;flex:1;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px}\n'+
+        '.sc-val{font-size:13px;font-weight:800;color:#fff}\n'+
+        '.sc-bonus{font-size:12px;color:#6dff6d;font-weight:700;margin-left:4px}\n'+
+        '.sc-div{border:none;border-top:2px solid rgba(140,90,0,.6);margin:0 0 4px}\n'+
+        '.sc-abilities{display:flex;flex-wrap:wrap;gap:5px;padding:6px 12px 8px}\n'+
+        '.sc-ability{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;'+
+        'background:linear-gradient(135deg,rgba(160,110,20,.4),rgba(100,65,5,.4));'+
+        'border:1px solid rgba(190,145,30,.6);border-radius:4px;'+
+        'padding:3px 10px;color:#eacc60}\n';
+    } else {
+      // ── Minimal dark skin ──────────────────────────────
+      statsCss=
+        '#sc{position:fixed;bottom:'+scBottom+'px;left:50%;transform:translateX(-50%);'+
+        'width:min(90vw,300px);background:rgba(6,3,18,0.9);'+
+        'border:1px solid rgba(200,160,60,0.4);border-radius:14px;'+
+        'padding:10px 14px 8px;'+
+        'opacity:0;pointer-events:none;z-index:12;'+
+        'transition:opacity .5s .2s;font-family:'+fontFamily+'}\n'+
+        '#sc.vis{opacity:1}\n'+
+        '.sc-row{display:flex;align-items:center;gap:8px;padding:3px 0}\n'+
+        '.sc-icon{width:18px;text-align:center;flex-shrink:0;font-size:13px}\n'+
+        '.sc-label{color:rgba(210,200,255,0.6);flex:1;text-transform:uppercase;letter-spacing:.5px;font-size:9px}\n'+
+        '.sc-val{font-size:12px;font-weight:700;color:#fff}\n'+
+        '.sc-bonus{font-size:11px;color:#44e890;font-weight:700;margin-left:3px}\n'+
+        '.sc-div{border:none;border-top:1px solid rgba(255,255,255,0.1);margin:5px 0}\n'+
+        '.sc-abilities{display:flex;flex-wrap:wrap;gap:4px}\n'+
+        '.sc-ability{font-size:10px;background:rgba(255,180,0,0.12);border:1px solid rgba(255,180,0,0.35);'+
+        'border-radius:20px;padding:2px 9px;color:#ffd060}\n';
+    }
     var scRows=s.statsRows.map(function(r){
       return '<div class="sc-row">'+
         '<span class="sc-icon">'+r.icon+'</span>'+
@@ -2261,7 +2323,7 @@ logoCss+
 '@keyframes lvA{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}35%{opacity:1;transform:translate(-50%,-50%) scale(1.18)}60%{transform:translate(-50%,-50%) scale(.94)}80%,100%{opacity:1;transform:translate(-50%,-60%) scale(1)}}\n'+
 
 // ── CTA (z:12) ─────────────────────────────────────────
-'#cta{position:fixed;bottom:'+s.ctaBottom+'px;left:50%;transform:translateX(-50%) translateY(22px);width:min(85vw,'+ctaMaxW+'px);background:'+ctaBg+';color:'+ctaTextCol+';font-size:'+ctaFontPx+'px;font-weight:900;text-align:center;letter-spacing:2px;text-transform:uppercase;padding:'+ctaPadPx+'px 0;border-radius:50px;border:none;cursor:pointer;box-shadow:0 4px 24px '+ctaShadow+',0 2px 0 rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'+
+'#cta{position:fixed;bottom:'+s.ctaBottom+'px;left:50%;transform:translateX(-50%) translateY(22px);width:min(85vw,'+ctaMaxW+'px);background:'+ctaBg+';color:'+ctaTextCol+';font-size:'+ctaFontPx+'px;font-weight:900;text-align:center;letter-spacing:2px;text-transform:uppercase;padding:'+ctaPadPx+'px 0;border-radius:'+ctaRadius+';border:none;cursor:pointer;box-shadow:0 4px 24px '+ctaShadow+',0 2px 0 rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'+
 '#cta.vis{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}\n'+
 '#cta.pulse{animation:ctaP .9s ease-in-out infinite}\n'+
 '@keyframes ctaP{0%,100%{transform:translateX(-50%) translateY(0) scale(1)}50%{transform:translateX(-50%) translateY(-5px) scale(1.04)}}\n'+
