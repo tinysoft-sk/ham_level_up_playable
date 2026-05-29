@@ -683,6 +683,51 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
     </div>
   </div>
 
+  <!-- End Game Panel -->
+  <div class="sec" id="s-gp">
+    <div class="sec-hd" onclick="toggleSec('s-gp')"><span class="sec-icon">🏆</span><span class="sec-title">End Game Panel</span><span class="sec-arr">▼</span></div>
+    <div class="sec-body">
+      <div class="tog-row"><span class="tog-lbl">Show competition panel on CTA</span><label class="toggle"><input type="checkbox" id="fx-gp" onchange="onGpToggle()"><span class="trk"></span></label></div>
+      <div id="gp-content" style="display:none">
+        <div class="fhint" style="margin-bottom:8px">Overlay a game-native results screen when the CTA fires.</div>
+        <div>
+          <div class="flabel">Panel Title</div>
+          <input type="text" id="gp-title" value="COMPETITION FINISHED" maxlength="30" oninput="S.gpTitle=this.value;refreshPreview()">
+        </div>
+        <div style="margin-top:8px">
+          <div class="flabel">Result Line</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="gp-sub" value="You Finished:" maxlength="20" style="flex:1" oninput="S.gpSub=this.value;refreshPreview()">
+            <input type="text" id="gp-num" value="5" maxlength="6" style="width:52px;text-align:center" oninput="S.gpNum=this.value;refreshPreview()">
+          </div>
+          <div class="fhint">Label + number (e.g. "You Finished:" "5")</div>
+        </div>
+        <div style="margin-top:10px">
+          <div class="flabel">Reward 1</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+            <div class="up-area" id="ua-gpr1" style="width:56px;height:56px;flex-shrink:0;cursor:pointer" onclick="document.getElementById('fi-gpr1').click()">
+              <input type="file" id="fi-gpr1" accept="image/*" style="display:none" onchange="gpIconLoaded('r1',this)">
+              <img class="up-prev" id="pv-gpr1" style="max-width:100%;max-height:100%">
+              <div class="up-ico" id="gpr1-ph" style="font-size:18px">🏅</div>
+            </div>
+            <input type="text" id="gp-r1v" value="310" maxlength="8" style="width:70px;text-align:center" oninput="S.gpR1Val=this.value;refreshPreview()">
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <div class="flabel">Reward 2</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+            <div class="up-area" id="ua-gpr2" style="width:56px;height:56px;flex-shrink:0;cursor:pointer" onclick="document.getElementById('fi-gpr2').click()">
+              <input type="file" id="fi-gpr2" accept="image/*" style="display:none" onchange="gpIconLoaded('r2',this)">
+              <img class="up-prev" id="pv-gpr2" style="max-width:100%;max-height:100%">
+              <div class="up-ico" id="gpr2-ph" style="font-size:18px">💰</div>
+            </div>
+            <input type="text" id="gp-r2v" value="500" maxlength="8" style="width:70px;text-align:center" oninput="S.gpR2Val=this.value;refreshPreview()">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Text & CTA -->
   <div class="sec" id="s-txt">
     <div class="sec-hd" onclick="toggleSec('s-txt')"><span class="sec-icon">📝</span><span class="sec-title">Text &amp; CTA</span><span class="sec-arr">▼</span></div>
@@ -1010,6 +1055,13 @@ var S = {
   statsScale:100,        // card scale %
   statsX:null,           // dragged position — null = auto
   statsY:null,           //
+  // v6.1 — end game panel
+  gpEnabled:false,
+  gpTitle:'COMPETITION FINISHED',
+  gpSub:'You Finished:',
+  gpNum:'5',
+  gpR1Src:null, gpR1Val:'310',
+  gpR2Src:null, gpR2Val:'500',
   // v5.1 — per-orientation layout
   perOrient:{
     portrait:  makeOrientState(72, 72, 50),
@@ -1730,7 +1782,7 @@ function applyLibAsset(cat,dataUrl,name,size){
 // ══════════════════════════════════════════════════════════
 var TAB_SECTIONS={
   assets:['s-unit','s-lv','s-lv2','s-logo','s-bg','s-intro','s-outro','s-snd'],
-  game:  ['s-cl','s-stats'],
+  game:  ['s-cl','s-stats','s-gp'],
   style: ['s-txt','s-font','s-layout','s-fx'],
   export:['s-net']
 };
@@ -1900,6 +1952,21 @@ function syncUIFromState(){
   document.getElementById('fl-opts').style.display=s.fl?'':'none';
   var sc=document.getElementById('stats-content');
   if(sc)sc.style.display=s.statsEnabled?'':'none';
+  chk('fx-gp', s.gpEnabled);
+  document.getElementById('gp-content').style.display=s.gpEnabled?'':'none';
+  var gpt=document.getElementById('gp-title');if(gpt)gpt.value=s.gpTitle||'COMPETITION FINISHED';
+  var gps=document.getElementById('gp-sub');if(gps)gps.value=s.gpSub||'You Finished:';
+  var gpn=document.getElementById('gp-num');if(gpn)gpn.value=s.gpNum||'5';
+  var gpr1=document.getElementById('gp-r1v');if(gpr1)gpr1.value=s.gpR1Val||'310';
+  var gpr2=document.getElementById('gp-r2v');if(gpr2)gpr2.value=s.gpR2Val||'500';
+  // restore icons
+  ['r1','r2'].forEach(function(slot){
+    var key=slot==='r1'?'gpR1Src':'gpR2Src';
+    var pv=document.getElementById('pv-gp'+slot);
+    var ph=document.getElementById('gp'+slot+'-ph');
+    if(s[key]&&pv){pv.src=s[key];pv.style.display='block';if(ph)ph.style.display='none';}
+    else{if(pv)pv.style.display='none';if(ph)ph.style.display='block';}
+  });
 
   // Swatches
   document.querySelectorAll('.pt-swatch').forEach(function(b){b.classList.toggle('active',b.dataset.t===s.ptTheme);});
@@ -1980,6 +2047,25 @@ function onStatsToggle(){
   S.statsEnabled=document.getElementById('fx-stats').checked;
   document.getElementById('stats-content').style.display=S.statsEnabled?'':'none';
   refreshPreview();
+}
+function onGpToggle(){
+  S.gpEnabled=document.getElementById('fx-gp').checked;
+  document.getElementById('gp-content').style.display=S.gpEnabled?'':'none';
+  refreshPreview();
+}
+function gpIconLoaded(slot,inp){
+  var f=inp.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var key=slot==='r1'?'gpR1Src':'gpR2Src';
+    S[key]=e.target.result;
+    var pv=document.getElementById('pv-gp'+slot);
+    var ph=document.getElementById('gp'+slot+'-ph');
+    if(pv){pv.src=e.target.result;pv.style.display='block';}
+    if(ph)ph.style.display='none';
+    refreshPreview();
+  };
+  r.readAsDataURL(f);
 }
 function onStatsSkin(skin){
   S.statsSkin=skin;
@@ -2103,19 +2189,21 @@ var FONT_PRESETS=[
   {id:'custom', label:'Custom ↑'}
 ];
 var CTA_SCHEMES={
-  orange:    {bg:'linear-gradient(135deg,#ff7a00,#ffb300)',text:'#2a0800',shadow:'rgba(255,120,0,.55)'},
-  blue:      {bg:'linear-gradient(135deg,#1877f2,#4299e1)',text:'#ffffff',shadow:'rgba(24,119,242,.5)'},
-  green:     {bg:'linear-gradient(135deg,#22c55e,#4ade80)',text:'#ffffff',shadow:'rgba(34,197,94,.5)'},
-  purple:    {bg:'linear-gradient(135deg,#7c3aed,#a855f7)',text:'#ffffff',shadow:'rgba(124,58,237,.5)'},
-  'game-green':{bg:'linear-gradient(180deg,#5fe000,#38a800)',text:'#ffffff',shadow:'rgba(70,200,0,.65)'}
+  orange:     {bg:'linear-gradient(135deg,#ff7a00,#ffb300)',text:'#2a0800',shadow:'rgba(255,120,0,.55)'},
+  blue:       {bg:'linear-gradient(135deg,#1877f2,#4299e1)',text:'#ffffff',shadow:'rgba(24,119,242,.5)'},
+  green:      {bg:'linear-gradient(135deg,#22c55e,#4ade80)',text:'#ffffff',shadow:'rgba(34,197,94,.5)'},
+  purple:     {bg:'linear-gradient(135deg,#7c3aed,#a855f7)',text:'#ffffff',shadow:'rgba(124,58,237,.5)'},
+  'game-green':{bg:'linear-gradient(180deg,#5fe000,#38a800)',text:'#ffffff',shadow:'rgba(70,200,0,.65)'},
+  'game-orange':{bg:'linear-gradient(180deg,#f5a623 0%,#e8890a 55%,#c97000 100%)',text:'#ffffff',shadow:'rgba(180,90,0,.6)',border:'#7a4000',bevel:true}
 };
 var CTA_SWATCH_DEFS=[
-  {id:'orange',    label:'Orange', bar:'linear-gradient(90deg,#ff7a00,#ffb300)'},
-  {id:'blue',      label:'Blue',   bar:'linear-gradient(90deg,#1877f2,#4299e1)'},
-  {id:'green',     label:'Green',  bar:'linear-gradient(90deg,#22c55e,#4ade80)'},
-  {id:'purple',    label:'Purple', bar:'linear-gradient(90deg,#7c3aed,#a855f7)'},
-  {id:'game-green',label:'🎮 Game', bar:'linear-gradient(90deg,#5fe000,#38a800)'},
-  {id:'custom',    label:'Custom', bar:'linear-gradient(90deg,#888,#aaa)'}
+  {id:'orange',     label:'Orange',  bar:'linear-gradient(90deg,#ff7a00,#ffb300)'},
+  {id:'blue',       label:'Blue',    bar:'linear-gradient(90deg,#1877f2,#4299e1)'},
+  {id:'green',      label:'Green',   bar:'linear-gradient(90deg,#22c55e,#4ade80)'},
+  {id:'purple',     label:'Purple',  bar:'linear-gradient(90deg,#7c3aed,#a855f7)'},
+  {id:'game-green', label:'🎮 Green', bar:'linear-gradient(90deg,#5fe000,#38a800)'},
+  {id:'game-orange',label:'🎮 Orange',bar:'linear-gradient(90deg,#f5a623,#c97000)'},
+  {id:'custom',     label:'Custom',  bar:'linear-gradient(90deg,#888,#aaa)'}
 ];
 
 // drag script — injected only into preview iframe
@@ -2231,7 +2319,7 @@ function buildAd(network){
     :(FONT_CSS[s.fontPreset]||FONT_CSS['default']);
 
   // ── v5.3: CTA computed style ──────────────────────────
-  var ctaBg, ctaTextCol, ctaShadow;
+  var ctaBg, ctaTextCol, ctaShadow, ctaBorderB='', ctaBevel=false;
   if(s.ctaScheme==='custom'){
     ctaBg=s.ctaBgColor;
     ctaTextCol=s.ctaTextColor;
@@ -2239,12 +2327,16 @@ function buildAd(network){
   } else {
     var sc=CTA_SCHEMES[s.ctaScheme]||CTA_SCHEMES.orange;
     ctaBg=sc.bg; ctaTextCol=sc.text; ctaShadow=sc.shadow;
+    ctaBorderB=sc.border||''; ctaBevel=!!sc.bevel;
   }
   var ctaSzF=s.ctaSize/100;
   var ctaFontPx=Math.round(15*ctaSzF);
   var ctaPadPx=Math.round(15*ctaSzF);
   var ctaMaxW=Math.round(320*ctaSzF);
   var ctaRadius=(s.ctaShape==='rounded')?'10px':'50px';
+  // bevel adds a thick bottom border that makes button look raised/physical
+  var ctaBoxShadow='0 4px 24px '+ctaShadow+',0 2px 0 rgba(0,0,0,.5)';
+  if(ctaBevel&&ctaBorderB) ctaBoxShadow='0 6px 0 '+ctaBorderB+',0 8px 20px '+ctaShadow+',inset 0 1px 0 rgba(255,255,255,.25)';
 
   // ── v6.0: Stats card ─────────────────────────────────────
   var statsHtml='', statsCss='';
@@ -2325,6 +2417,41 @@ function buildAd(network){
         }).join('')+'</div>';
     }
     statsHtml='<div id="sc" data-scale="'+scScaleF+'">'+scRows+scAbs+'</div>\n';
+  }
+
+  // ── v6.1: End Game Panel ──────────────────────────────────
+  var gpHtml='', gpCss='';
+  if(s.gpEnabled){
+    var r1html=s.gpR1Src?'<img src="'+s.gpR1Src+'" draggable="false">':'<span style="font-size:28px">🏅</span>';
+    var r2html=s.gpR2Src?'<img src="'+s.gpR2Src+'" draggable="false">':'<span style="font-size:28px">💰</span>';
+    gpHtml='<div id="gp"><div id="gp-inner">'+
+      '<div id="gp-chains"><div class="gp-chain gp-chain-l"></div><div class="gp-chain gp-chain-r"></div></div>'+
+      '<div id="gp-frame">'+
+        '<div id="gp-title-wrap"><div id="gp-title-text">'+escHtml(s.gpTitle||'COMPETITION FINISHED')+'</div></div>'+
+        '<div id="gp-sub">'+escHtml(s.gpSub||'You Finished:')+'</div>'+
+        '<div id="gp-num">'+escHtml(s.gpNum||'5')+'</div>'+
+        '<div id="gp-rewards">'+
+          '<div class="gp-rw"><div class="gp-rw-icon">'+r1html+'</div><div class="gp-rw-val">'+escHtml(s.gpR1Val||'310')+'</div></div>'+
+          '<div class="gp-rw"><div class="gp-rw-icon">'+r2html+'</div><div class="gp-rw-val">'+escHtml(s.gpR2Val||'500')+'</div></div>'+
+        '</div>'+
+      '</div>'+
+    '</div></div>\n';
+    gpCss=
+      '#gp{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,8,20,0.96);opacity:0;pointer-events:none;transition:opacity 0.4s;z-index:80}\n'+
+      '#gp.vis{opacity:1;pointer-events:auto}\n'+
+      '#gp-inner{width:88%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:0}\n'+
+      '#gp-chains{width:100%;display:flex;justify-content:space-between;padding:0 20px;position:relative;top:6px}\n'+
+      '.gp-chain{width:12px;height:30px;background:repeating-linear-gradient(180deg,#6b5230 0,#6b5230 8px,#3d2d15 8px,#3d2d15 14px);border-radius:3px}\n'+
+      '#gp-frame{width:100%;background:linear-gradient(180deg,#1a130a 0%,#120d06 100%);border:2px solid #7a5c2a;border-radius:8px;padding:0 0 18px;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,.8),inset 0 1px 0 rgba(180,130,50,.2)}\n'+
+      '#gp-title-wrap{background:linear-gradient(135deg,#7a5010,#c8860a,#e8a020,#c8860a,#7a5010);padding:10px 20px;text-align:center;margin-bottom:10px;border-bottom:1px solid rgba(200,140,20,.3);box-shadow:0 2px 12px rgba(0,0,0,.5)}\n'+
+      '#gp-title-text{font-size:clamp(13px,3.5vw,17px);font-weight:900;color:#fff;letter-spacing:1.5px;text-shadow:0 1px 3px rgba(0,0,0,.7)}\n'+
+      '#gp-sub{font-size:clamp(13px,3vw,15px);color:#ccc;text-align:center;margin-top:4px;font-weight:500}\n'+
+      '#gp-num{font-size:clamp(52px,14vw,72px);font-weight:900;color:#fff;text-align:center;line-height:1;text-shadow:0 0 30px rgba(255,200,50,.7),0 0 60px rgba(255,160,0,.4),0 2px 4px rgba(0,0,0,.8);margin:2px 0 10px}\n'+
+      '#gp-rewards{display:flex;justify-content:center;gap:12px;padding:0 16px}\n'+
+      '.gp-rw{display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 18px;min-width:90px}\n'+
+      '.gp-rw-icon{width:52px;height:52px;display:flex;align-items:center;justify-content:center}\n'+
+      '.gp-rw-icon img{width:100%;height:100%;object-fit:contain}\n'+
+      '.gp-rw-val{font-size:clamp(20px,5vw,26px);font-weight:900;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}\n';
   }
 
   // ── v5.3: rev animation final filter (no lingering shadow) ──
@@ -2440,6 +2567,13 @@ function buildAd(network){
     ptSpread:s.ptSpread/100,
     statsAlways:s.statsEnabled&&s.statsMode==='always',
     statsGrow:statsGrow,
+    gp:s.gpEnabled?{
+      title:s.gpTitle||'COMPETITION FINISHED',
+      sub:s.gpSub||'You Finished:',
+      num:s.gpNum||'5',
+      r1:s.gpR1Src||null, r1v:s.gpR1Val||'310',
+      r2:s.gpR2Src||null, r2v:s.gpR2Val||'500'
+    }:null,
   }).replace(/<\//g,'<\\/');
 
   // ── CTA action ────────────────────────────────────────
@@ -2609,10 +2743,10 @@ function buildAd(network){
 '      var outroOv=document.getElementById("outro-ov");\n'+
 '      outroOv.style.transition="opacity 0.7s";\n'+
 '      outroOv.style.opacity="1";\n'+
-'      setTimeout(function(){cta.classList.add("vis");if(scEl){scEl.classList.add("vis");scEl.classList.add("sc-upgraded");}setTimeout(function(){cta.classList.add("pulse");},600);},700);\n'+
+'      setTimeout(function(){cta.classList.add("vis");if(scEl){scEl.classList.add("vis");scEl.classList.add("sc-upgraded");}if(C.gp){var gpEl=document.getElementById("gp");if(gpEl){setTimeout(function(){gpEl.classList.add("vis");},300);}}setTimeout(function(){cta.classList.add("pulse");},600);},700);\n'+
 '    },1600);\n'+
 '  } else {\n'+
-'    setTimeout(function(){cta.classList.add("vis");if(scEl){scEl.classList.add("vis");scEl.classList.add("sc-upgraded");}setTimeout(function(){cta.classList.add("pulse");},600);},2000);\n'+
+'    setTimeout(function(){cta.classList.add("vis");if(scEl){scEl.classList.add("vis");scEl.classList.add("sc-upgraded");}if(C.gp){var gpEl=document.getElementById("gp");if(gpEl){setTimeout(function(){gpEl.classList.add("vis");},300);}}setTimeout(function(){cta.classList.add("pulse");},600);},2000);\n'+
 '  }\n'+
 '}\n'+
 '\n'+
@@ -2789,7 +2923,7 @@ logoCss+
 '@keyframes lvA{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}35%{opacity:1;transform:translate(-50%,-50%) scale(1.18)}60%{transform:translate(-50%,-50%) scale(.94)}80%,100%{opacity:1;transform:translate(-50%,-60%) scale(1)}}\n'+
 
 // ── CTA (z:12) ─────────────────────────────────────────
-'#cta{position:fixed;bottom:'+s.ctaBottom+'px;left:50%;transform:translateX(-50%) translateY(22px);width:min(85vw,'+ctaMaxW+'px);background:'+ctaBg+';color:'+ctaTextCol+';font-size:'+ctaFontPx+'px;font-weight:900;text-align:center;letter-spacing:2px;text-transform:uppercase;padding:'+ctaPadPx+'px 0;border-radius:'+ctaRadius+';border:none;cursor:pointer;box-shadow:0 4px 24px '+ctaShadow+',0 2px 0 rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'+
+'#cta{position:fixed;bottom:'+s.ctaBottom+'px;left:50%;transform:translateX(-50%) translateY(22px);width:min(85vw,'+ctaMaxW+'px);background:'+ctaBg+';color:'+ctaTextCol+';font-size:'+ctaFontPx+'px;font-weight:900;text-align:center;letter-spacing:2px;text-transform:uppercase;padding:'+ctaPadPx+'px 0;border-radius:'+ctaRadius+';border:none;cursor:pointer;box-shadow:'+ctaBoxShadow+';opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'+
 '#cta.vis{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}\n'+
 '#cta.pulse{animation:ctaP .9s ease-in-out infinite}\n'+
 '@keyframes ctaP{0%,100%{transform:translateX(-50%) translateY(0) scale(1)}50%{transform:translateX(-50%) translateY(-5px) scale(1.04)}}\n'+
@@ -2806,6 +2940,7 @@ logoCss+
 '@keyframes skipPulse{0%,100%{opacity:.55}50%{opacity:1}}\n'+
 '#particles{position:fixed;inset:0;pointer-events:none;z-index:5}\n'+
 statsCss+
+gpCss+
 '</style>\n'+
 '</head>\n'+
 '<body>\n'+
@@ -2824,6 +2959,7 @@ logoHtml+
 outroHtml+
 '<div id="lv">'+escHtml(s.lvText)+'</div>\n'+
 statsHtml+
+gpHtml+
 '<button id="cta">'+escHtml(s.ctaText)+'</button>\n'+
 '<div id="fl"></div>\n'+
 '<div id="particles"></div>\n'+
