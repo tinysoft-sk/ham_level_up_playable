@@ -239,6 +239,19 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
 
+/* ── STAR STEPS EDITOR ── */
+.ss-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:6px 0 2px}
+.ss-step{display:flex;flex-direction:column;align-items:center;gap:2px}
+.ss-step-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.ss-inp{width:42px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 2px;font-size:13px;font-weight:700;outline:none;-moz-appearance:textfield}
+.ss-inp::-webkit-outer-spin-button,.ss-inp::-webkit-inner-spin-button{-webkit-appearance:none}
+.ss-inp:focus{border-color:var(--purple)}
+.ss-arrow{font-size:9px;color:var(--muted);padding:0 1px;margin-top:10px;flex-shrink:0;line-height:1}
+.ss-del{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:0;line-height:1;margin-top:10px;flex-shrink:0}
+.ss-del:hover{color:var(--danger)}
+.ss-add{background:none;border:1px dashed var(--border);border-radius:6px;color:var(--muted);font-size:11px;padding:5px 8px;cursor:pointer;margin-top:10px;transition:border-color .15s,color .15s;white-space:nowrap;flex-shrink:0}
+.ss-add:hover{border-color:var(--gold);color:var(--gold)}
+
 /* ── STATS EDITOR ── */
 .stat-row-ed,.stat-ab-row{display:flex;gap:5px;align-items:center}
 .stat-icon-inp{width:34px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 3px;font-size:15px;outline:none;flex-shrink:0}
@@ -248,7 +261,9 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 .stat-ab-name-inp{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 6px;font-size:12px;outline:none;min-width:0}
 .stat-del-btn{background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);width:22px;height:22px;font-size:14px;cursor:pointer;line-height:1;flex-shrink:0;transition:border-color .15s,color .15s;padding:0;display:flex;align-items:center;justify-content:center}
 .stat-del-btn:hover{border-color:var(--danger);color:var(--danger)}
-.stats-col-heads{display:grid;grid-template-columns:34px 1.4fr 1fr 1fr 22px;gap:5px;margin-bottom:3px}
+.stats-col-heads{display:grid;grid-template-columns:34px 1.4fr 1fr 1fr 40px 22px;gap:5px;margin-bottom:3px}
+.stat-grow-inp{width:40px!important;flex:0 0 40px!important;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:#44dd88;padding:4px 3px;font-size:11px;font-weight:700;outline:none;-moz-appearance:textfield}
+.stat-grow-inp::-webkit-outer-spin-button,.stat-grow-inp::-webkit-inner-spin-button{-webkit-appearance:none}
 .stats-col-head{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:center}
 /* Fix: override global input[type=text]{width:100%} for stat editor inputs */
 .stat-icon-inp{width:34px!important;flex:0 0 34px!important}
@@ -291,9 +306,9 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 
   <!-- Base Unit -->
   <div class="sec" id="s-unit">
-    <div class="sec-hd" onclick="toggleSec('s-unit')"><span class="sec-icon">⚔️</span><span class="sec-title">Base Unit</span><span class="sec-arr">▼</span></div>
+    <div class="sec-hd" onclick="toggleSec('s-unit')"><span class="sec-icon">⚔️</span><span class="sec-title">Stage 1 — Base Unit</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
-      <div class="phase-tag phase-game">Phase 2 — Game</div>
+      <div class="phase-tag phase-game">Stage 1 · Shown in game</div>
       <div>
         <div class="flabel">Unit Still Image</div>
         <div class="up-area" id="ua-unit">
@@ -318,15 +333,15 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 
   <!-- Leveled Up Unit -->
   <div class="sec" id="s-lv">
-    <div class="sec-hd" onclick="toggleSec('s-lv')"><span class="sec-icon">✨</span><span class="sec-title">Leveled Up Unit</span><span class="sec-arr">▼</span></div>
+    <div class="sec-hd" onclick="toggleSec('s-lv')"><span class="sec-icon">✨</span><span class="sec-title">Stage 2 — Level Up</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
-      <div class="phase-tag phase-game">Phase 3 — Transform</div>
+      <div class="phase-tag phase-game">Stage 2 · Revealed on transform</div>
       <div>
-        <div class="flabel">Animated File</div>
+        <div class="flabel">Stage 2 Asset</div>
         <div class="up-area" id="ua-lv">
-          <input type="file" id="fi-lv" accept="image/*" style="display:none" onchange="fileLoaded('lv',this)">
+          <input type="file" id="fi-lv" accept="image/*,video/*" style="display:none" onchange="fileLoaded('lv',this)">
           <div class="up-ico">🎞️</div><div class="up-txt">Click or drag &amp; drop</div>
-          <div class="up-sub">Animated WebP · GIF · PNG · JPG</div>
+          <div class="up-sub">PNG · GIF · Animated WebP · MP4 · WebM</div>
           <img class="up-prev" id="pv-lv"><button class="up-x" onclick="clearImg(event,'lv')">×</button>
         </div>
         <div class="fsize" id="sz-lv"></div>
@@ -348,6 +363,57 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
           <div class="sl-val" id="lv-blend-val">40%</div>
         </div>
         <div class="fhint">Fades the edges of the leveled-up image into the background. 0 = sharp edges (off).</div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="flabel">Reveals at Tap</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <input type="number" id="stage2-tap-inp" min="1" value="1" style="width:52px;padding:5px 8px;font-size:13px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none" oninput="onStage2AtTap(this.value)">
+          <span style="font-size:12px;color:var(--muted)">of <span id="stage2-tap-max">5</span> total taps</span>
+        </div>
+        <div class="fhint">Stage 2 animation fires on this tap.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 3 (optional) -->
+  <div class="sec" id="s-lv2">
+    <div class="sec-hd" onclick="toggleSec('s-lv2')"><span class="sec-icon">⭐</span><span class="sec-title">Stage 3 — Final Form <em style="font-size:10px;color:var(--muted);font-style:normal">(optional)</em></span><span class="sec-arr">▼</span></div>
+    <div class="sec-body">
+      <div class="phase-tag phase-game">Stage 3 · Optional second transform</div>
+      <div>
+        <div class="flabel">Stage 3 Asset</div>
+        <div class="up-area" id="ua-lv2">
+          <input type="file" id="fi-lv2" accept="image/*,video/*" style="display:none" onchange="fileLoaded('lv2',this)">
+          <div class="up-ico">⭐</div><div class="up-txt">Click or drag &amp; drop</div>
+          <div class="up-sub">PNG · GIF · Animated WebP · MP4 · WebM</div>
+          <img class="up-prev" id="pv-lv2"><button class="up-x" onclick="clearImg(event,'lv2')">×</button>
+        </div>
+        <div class="fsize" id="sz-lv2"></div>
+        <button class="lib-btn" onclick="openLib('lv2')">📁 Choose from library <span class="lib-count" id="lc-lv2">0</span></button>
+      </div>
+      <div>
+        <div class="flabel">Stage 3 Size <span class="orient-lbl p" id="lv2-sz-badge">📱</span></div>
+        <div class="sl-row">
+          <input type="range" id="sl-lv2-sz" min="20" max="100" value="72" oninput="onLv2Size(this.value)">
+          <div class="sl-val" id="lv2-sz-val">72%</div>
+        </div>
+        <div class="fhint">Applied after Stage 3 transformation.</div>
+      </div>
+      <div>
+        <div class="flabel">Edge Blend</div>
+        <div class="sl-row">
+          <input type="range" id="sl-lv2-blend" min="0" max="90" value="40" oninput="onLv2Blend(this.value)">
+          <div class="sl-val" id="lv2-blend-val">40%</div>
+        </div>
+        <div class="fhint">Fades the edges of the Stage 3 image into the background. 0 = off.</div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="flabel">Reveals at Tap</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <input type="number" id="lv2-tap-inp" min="1" value="1" style="width:52px;padding:5px 8px;font-size:13px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none" oninput="onLv2AtTap(this.value)">
+          <span style="font-size:12px;color:var(--muted)">of <span id="lv2-tap-max">5</span> total taps</span>
+        </div>
+        <div class="fhint">Stage 3 fires on this tap. Must be after Stage 2's tap. Leave at final tap for the classic flow.</div>
       </div>
     </div>
   </div>
@@ -517,15 +583,27 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 
   <!-- Clicks & Progress -->
   <div class="sec" id="s-cl">
-    <div class="sec-hd" onclick="toggleSec('s-cl')"><span class="sec-icon">⭐</span><span class="sec-title">Clicks &amp; Progress</span><span class="sec-arr">▼</span></div>
+    <div class="sec-hd" onclick="toggleSec('s-cl')"><span class="sec-icon">⭐</span><span class="sec-title">Stars &amp; Taps</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
-      <div>
-        <div class="flabel">Clicks needed to Level Up</div>
-        <div class="sl-row">
-          <input type="range" id="sl-cl" min="2" max="8" value="5" oninput="onClicks(this.value)">
-          <div class="sl-val" id="cl-val">5</div>
+      <div class="flabel">Star Steps</div>
+      <div class="fhint">Each box = ★ filled at that tap. TAP N sets the fill level — independent of the total shown.</div>
+      <div class="ss-row" id="ss-row"></div>
+      <div style="display:flex;align-items:center;gap:16px;margin-top:6px">
+        <span style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px">
+          Total ★ shown:
+          <input type="number" id="ss-total" min="1" max="99" value="5" style="width:46px;padding:4px 5px;font-size:13px;font-weight:700;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--gold);outline:none;-moz-appearance:textfield" oninput="onTotalStars(this.value)">
+        </span>
+        <span style="font-size:11px;color:var(--muted)">Taps: <strong id="ss-taps">5</strong></span>
+      </div>
+      <div class="fhint" style="margin-top:4px">Set Total ★ higher than the last tap to leave stars unfilled — combine with Cliffhanger below.</div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+        <div class="flabel">Cliffhanger</div>
+        <div class="fhint">Skip the final transform — CTA fires while stars are still unfilled, creating urgency.</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:5px">
+          <span style="font-size:12px;color:var(--muted)">Fire CTA when</span>
+          <input type="number" id="cliffhanger-inp" min="0" max="20" value="0" style="width:48px;padding:5px 6px;font-size:13px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--gold);font-weight:700;outline:none;-moz-appearance:textfield" oninput="onCliffhanger(this.value)">
+          <span style="font-size:12px;color:var(--muted)">★ remain &nbsp;<em style="font-style:normal;opacity:.6">(0 = off)</em></span>
         </div>
-        <div class="fhint" id="star-hint">Shows ★★★★★ — player fills all 5 stars</div>
       </div>
     </div>
   </div>
@@ -587,6 +665,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
             <div class="stats-col-head">Label</div>
             <div class="stats-col-head">Value</div>
             <div class="stats-col-head">+Bonus</div>
+            <div class="stats-col-head" title="% increase per tap step">%/tap</div>
             <div></div>
           </div>
           <div id="stats-rows-wrap" style="display:flex;flex-direction:column;gap:6px"></div>
@@ -857,6 +936,7 @@ function makeOrientState(unitSz, lvSz, logoSz){
     pos:{ logo:{x:50,y:9}, stars:{x:50,y:20}, unit:{x:50,y:52}, hint:{x:50,y:83} },
     unitSize: unitSz,
     lvSize:   lvSz,
+    lv2Size:  lvSz,
     logoSize: logoSz,
     introSize:100,
     outroSize:100
@@ -871,7 +951,13 @@ var S = {
   introSrc:null, outroSrc:null,
   introDuration:4,
   csSrc:null,    lsSrc:null,
-  clicks:5,
+  starSteps:[0,1,2,3,4,5],
+  totalStars:null,
+  cliffhanger:0,
+  lv2Src:null,
+  lv2Blend:40,
+  stage2AtTap:null,
+  lv2AtTap:null,
   tapText:'TAP TO LEVEL UP!',
   lvText:'★ LEVEL UP! ★',
   ctaText:'PLAY NOW — FREE',
@@ -907,11 +993,11 @@ var S = {
   // v6.0 — stats card
   statsEnabled:false,
   statsRows:[
-    {icon:'⚡',label:'Power',  val:'6.5M', bonus:'+626k'},
-    {icon:'❤️',label:'Health', val:'29,000',bonus:'+3,000'},
-    {icon:'⚔️',label:'Attack', val:'150',  bonus:'+20'},
-    {icon:'🛡️',label:'Defense',val:'170',  bonus:'+15'},
-    {icon:'💨',label:'Speed',  val:'10',   bonus:''}
+    {icon:'⚡',label:'Power',  val:'6.5M', bonus:'+626k', growth:0},
+    {icon:'❤️',label:'Health', val:'29,000',bonus:'+3,000',growth:0},
+    {icon:'⚔️',label:'Attack', val:'150',  bonus:'+20',   growth:0},
+    {icon:'🛡️',label:'Defense',val:'170',  bonus:'+15',   growth:0},
+    {icon:'💨',label:'Speed',  val:'10',   bonus:'',       growth:0}
   ],
   statsAbilities:[
     {icon:'🪨',name:'Stone Skin'},
@@ -1025,7 +1111,7 @@ function copyLayout(from, to){
     unit:  {x:src.pos.unit.x,  y:src.pos.unit.y},
     hint:  {x:src.pos.hint.x,  y:src.pos.hint.y}
   };
-  dst.unitSize=src.unitSize; dst.lvSize=src.lvSize; dst.logoSize=src.logoSize;
+  dst.unitSize=src.unitSize; dst.lvSize=src.lvSize; dst.lv2Size=src.lv2Size||src.lvSize; dst.logoSize=src.logoSize;
   dst.introSize=src.introSize; dst.outroSize=src.outroSize;
   // if we copied TO the current orientation, refresh sliders
   if(to===previewOrientation) syncSlidersToOrientation();
@@ -1046,6 +1132,8 @@ function syncSlidersToOrientation(){
   document.getElementById('unit-sz-val').textContent=o.unitSize+'%';
   document.getElementById('sl-lv-sz').value=o.lvSize;
   document.getElementById('lv-sz-val').textContent=o.lvSize+'%';
+  var lv2sz=document.getElementById('sl-lv2-sz');if(lv2sz)lv2sz.value=o.lv2Size||o.lvSize;
+  var lv2szv=document.getElementById('lv2-sz-val');if(lv2szv)lv2szv.textContent=(o.lv2Size||o.lvSize)+'%';
   document.getElementById('sl-logo').value=o.logoSize;
   document.getElementById('logo-val').textContent=o.logoSize+'%';
   document.getElementById('sl-intro-sz').value=o.introSize;
@@ -1076,8 +1164,9 @@ function syncSlidersToOrientation(){
 // ══════════════════════════════════════════════════════════
 //  UPLOADS — IMAGES
 // ══════════════════════════════════════════════════════════
-['unit','lv','logo','bgp','bgl','intro','outro'].forEach(function(k){
+['unit','lv','lv2','logo','bgp','bgl','intro','outro'].forEach(function(k){
   var area=document.getElementById('ua-'+k);
+  if(!area)return;
   area.addEventListener('dragover',function(e){e.preventDefault();area.classList.add('drag');});
   area.addEventListener('dragleave',function(){area.classList.remove('drag');});
   area.addEventListener('drop',function(e){
@@ -1157,10 +1246,91 @@ function hideSize(id){var el=document.getElementById(id);el.className='fsize';el
 // ══════════════════════════════════════════════════════════
 //  CONTROL HANDLERS  (all orientation-aware)
 // ══════════════════════════════════════════════════════════
-function onClicks(v){
-  S.clicks=parseInt(v);
-  document.getElementById('cl-val').textContent=v;
-  document.getElementById('star-hint').textContent='Shows '+('★'.repeat(+v))+' — player fills all '+v+' stars';
+function renderStarStepsUI(){
+  var row=document.getElementById('ss-row');
+  if(!row)return;
+  var steps=S.starSteps;
+  var html='';
+  steps.forEach(function(v,i){
+    if(i>0)html+='<span class="ss-arrow">→</span>';
+    var lbl=i===0?'Start':'Tap '+i;
+    html+='<div class="ss-step">';
+    html+='<span class="ss-step-lbl">'+lbl+'</span>';
+    html+='<div style="display:flex;align-items:center;gap:1px">';
+    html+='<input class="ss-inp" type="number" min="0" max="99" value="'+v+'" data-idx="'+i+'" oninput="onStarStep('+i+',this.value)">';
+    if(steps.length>2&&i>0&&i<steps.length-1)html+='<button class="ss-del" title="Remove this step" onclick="removeStarStep('+i+')">×</button>';
+    html+='</div></div>';
+  });
+  html+='<span class="ss-arrow">→</span>';
+  html+='<button class="ss-add" onclick="addStarStep()">+ Tap</button>';
+  row.innerHTML=html;
+  var lastFill=steps[steps.length-1]||0;
+  var taps=steps.length-1;
+  // totalStars is the number of icons shown; must be >= lastFill
+  var total=Math.max(S.totalStars||lastFill,lastFill);
+  S.totalStars=total||lastFill; // keep in sync
+  var te=document.getElementById('ss-total');
+  if(te){te.value=total;te.min=lastFill;}
+  var tp=document.getElementById('ss-taps');if(tp)tp.textContent=taps;
+  var s2max=document.getElementById('stage2-tap-max');if(s2max)s2max.textContent=taps;
+  var s2inp=document.getElementById('stage2-tap-inp');
+  if(s2inp){
+    var s2maxTap=Math.max(1,taps-1);
+    s2inp.max=s2maxTap;
+    if(S.stage2AtTap!==null&&S.stage2AtTap>s2maxTap)S.stage2AtTap=s2maxTap;
+    s2inp.value=S.stage2AtTap||1;
+  }
+  var l2max=document.getElementById('lv2-tap-max');if(l2max)l2max.textContent=taps;
+  var l2inp=document.getElementById('lv2-tap-inp');
+  if(l2inp){
+    l2inp.max=taps;
+    if(S.lv2AtTap!==null&&S.lv2AtTap>taps)S.lv2AtTap=taps;
+    // null = final tap (show current totalTaps as default)
+    l2inp.value=S.lv2AtTap||taps;
+  }
+}
+function onStarStep(idx,val){
+  val=Math.max(0,parseInt(val)||0);
+  var steps=S.starSteps.slice();
+  steps[idx]=val;
+  S.starSteps=steps;
+  renderStarStepsUI();
+  refreshPreview();
+}
+function addStarStep(){
+  var steps=S.starSteps;
+  var last=steps[steps.length-1];
+  S.starSteps=steps.concat([last+1]);
+  renderStarStepsUI();
+  refreshPreview();
+}
+function removeStarStep(idx){
+  if(S.starSteps.length<=2)return;
+  S.starSteps=S.starSteps.filter(function(_,i){return i!==idx;});
+  renderStarStepsUI();
+  refreshPreview();
+}
+function onStage2AtTap(v){
+  var val=parseInt(v)||1;
+  var maxTap=S.starSteps.length-2;
+  S.stage2AtTap=Math.max(1,Math.min(val,maxTap));
+  refreshPreview();
+}
+function onLv2AtTap(v){
+  var val=parseInt(v)||1;
+  var maxTap=S.starSteps.length-1;
+  S.lv2AtTap=Math.max(1,Math.min(val,maxTap));
+  refreshPreview();
+}
+function onTotalStars(v){
+  var lastFill=S.starSteps[S.starSteps.length-1]||1;
+  // Total stars shown must be >= the highest filled step
+  S.totalStars=Math.max(lastFill,parseInt(v)||lastFill);
+  renderStarStepsUI();
+  refreshPreview();
+}
+function onCliffhanger(v){
+  S.cliffhanger=Math.max(0,parseInt(v)||0);
   refreshPreview();
 }
 function onIntroDur(v){
@@ -1181,6 +1351,16 @@ function onUnitSize(v){
 function onLvSize(v){
   curO().lvSize=parseInt(v);
   document.getElementById('lv-sz-val').textContent=v+'%';
+  refreshPreview();
+}
+function onLv2Size(v){
+  curO().lv2Size=parseInt(v);
+  document.getElementById('lv2-sz-val').textContent=v+'%';
+  refreshPreview();
+}
+function onLv2Blend(v){
+  S.lv2Blend=parseInt(v);
+  document.getElementById('lv2-blend-val').textContent=v+'%';
   refreshPreview();
 }
 function onIntroSize(v){
@@ -1395,8 +1575,9 @@ function exportAd(network){
 var _db=null,_libCache={},_libCat=null;
 
 var LIB_INFO={
-  unit: {label:'Base Unit',    icon:'⚔️', audio:false},
-  lv:   {label:'Leveled Up',   icon:'✨', audio:false},
+  unit: {label:'Stage 1 Unit', icon:'⚔️', audio:false},
+  lv:   {label:'Stage 2',      icon:'✨', audio:false},
+  lv2:  {label:'Stage 3',      icon:'⭐', audio:false},
   logo: {label:'Logo',         icon:'🏆', audio:false},
   bgp:  {label:'BG Portrait',  icon:'📱', audio:false},
   bgl:  {label:'BG Landscape', icon:'📺', audio:false},
@@ -1548,7 +1729,7 @@ function applyLibAsset(cat,dataUrl,name,size){
 //  TAB SYSTEM
 // ══════════════════════════════════════════════════════════
 var TAB_SECTIONS={
-  assets:['s-unit','s-lv','s-logo','s-bg','s-intro','s-outro','s-snd'],
+  assets:['s-unit','s-lv','s-lv2','s-logo','s-bg','s-intro','s-outro','s-snd'],
   game:  ['s-cl','s-stats'],
   style: ['s-txt','s-font','s-layout','s-fx'],
   export:['s-net']
@@ -1650,6 +1831,11 @@ function onPresetSelect(){
 function applyPreset(data){
   // Restore all state keys from the preset
   Object.keys(data).forEach(function(k){S[k]=data[k];});
+  // Backward compat: old presets had 'clicks', not 'starSteps'
+  if(typeof S.clicks==='number'&&!S.starSteps){
+    S.starSteps=[];for(var _i=0;_i<=S.clicks;_i++)S.starSteps.push(_i);
+  }
+  if(!Array.isArray(S.starSteps)||S.starSteps.length<2)S.starSteps=[0,1,2,3,4,5];
   syncUIFromState();
   refreshPreview();
 }
@@ -1671,8 +1857,17 @@ function syncUIFromState(){
     var el=document.getElementById(id);if(el)el.value=val;
     if(dispId){var d=document.getElementById(dispId);if(d)d.textContent=fmt?fmt(val):val;}
   }
-  sl('sl-cl',s.clicks,'cl-val');
-  document.getElementById('star-hint').textContent='★'.repeat(+s.clicks)+' — player fills all '+s.clicks+' stars';
+  renderStarStepsUI();
+  var clinp=document.getElementById('cliffhanger-inp');if(clinp)clinp.value=s.cliffhanger||0;
+  var _tapsN=(s.starSteps||[0,1]).length-1;
+  var s2inp=document.getElementById('stage2-tap-inp');
+  if(s2inp){s2inp.value=s.stage2AtTap||1;s2inp.max=Math.max(1,_tapsN-1);}
+  var s2max=document.getElementById('stage2-tap-max');
+  if(s2max)s2max.textContent=_tapsN;
+  var l2inp=document.getElementById('lv2-tap-inp');
+  if(l2inp){l2inp.value=s.lv2AtTap||_tapsN;l2inp.max=_tapsN;}
+  var l2max=document.getElementById('lv2-tap-max');
+  if(l2max)l2max.textContent=_tapsN;
   sl('sl-idur',s.introDuration,'idur-val',function(v){return v+' s';});
   sl('sl-vig',s.vignette,'vig-val',function(v){return v+'%';});
   document.getElementById('vig-inner').style.opacity=s.vignette/100;
@@ -1686,6 +1881,7 @@ function syncUIFromState(){
   sl('sl-pts',s.ptSpread,'pts-val',function(v){return v+'%';});
   sl('sl-fli',s.flashIntensity,'fli-val',function(v){return v+'%';});
   sl('sl-lv-blend',s.lvBlend,'lv-blend-val',function(v){return v+'%';});
+  sl('sl-lv2-blend',s.lv2Blend||40,'lv2-blend-val',function(v){return v+'%';});
 
   // Color pickers
   function cp(id,val){var el=document.getElementById(id);if(el)el.value=val;}
@@ -1725,7 +1921,7 @@ function syncUIFromState(){
   }
 
   // Image asset previews
-  ['unit','lv','logo','bgp','bgl','intro','outro'].forEach(function(k){
+  ['unit','lv','lv2','logo','bgp','bgl','intro','outro'].forEach(function(k){
     var src=s[k+'Src'];
     var pv=document.getElementById('pv-'+k);
     var ua=document.getElementById('ua-'+k);
@@ -1829,6 +2025,7 @@ function renderStatsRows(){
       '<input type="text" class="stat-label-inp" value="'+escHtml(row.label)+'" placeholder="Label" oninput="updateStatRow('+i+',\'label\',this.value)">'+
       '<input type="text" class="stat-val-inp" value="'+escHtml(row.val)+'" placeholder="Value" oninput="updateStatRow('+i+',\'val\',this.value)">'+
       '<input type="text" class="stat-bonus-inp" value="'+escHtml(row.bonus||'')+'" placeholder="+bonus" oninput="updateStatRow('+i+',\'bonus\',this.value)">'+
+      '<input type="number" class="stat-grow-inp" value="'+(row.growth||0)+'" min="0" max="200" placeholder="0" title="% increase per tap step" oninput="updateStatRow('+i+',\'growth\',parseFloat(this.value)||0)">'+
       '<button class="stat-del-btn" onclick="removeStatRow('+i+')">×</button>';
     wrap.appendChild(d);
   });
@@ -1854,7 +2051,7 @@ function removeStatRow(i){
   S.statsRows.splice(i,1);renderStatsRows();refreshPreview();
 }
 function addStatRow(){
-  S.statsRows.push({icon:'⚡',label:'Stat',val:'100',bonus:''});
+  S.statsRows.push({icon:'⚡',label:'Stat',val:'100',bonus:'',growth:0});
   renderStatsRows();refreshPreview();
 }
 function updateAbility(i,key,val){
@@ -1981,7 +2178,7 @@ var DRAG_JS=
 '    var r=scD.getBoundingClientRect();\n'+
 '    var cx=(r.left+r.width/2)/window.innerWidth*100;\n'+
 '    var cy=(r.top+r.height/2)/window.innerHeight*100;\n'+
-'    scD.style.bottom="";\n'+
+'    scD.style.bottom="auto";\n'+
 '    scD.style.left=cx.toFixed(1)+"%";\n'+
 '    scD.style.top=cy.toFixed(1)+"%";\n'+
 '    var scl=parseFloat(scD.dataset.scale||"1");\n'+
@@ -2056,14 +2253,14 @@ function buildAd(network){
     var scAutoBottom=s.ctaBottom+ctaBtnH+8;
     var scBottomPx=(s.statsAuto!==false)?scAutoBottom:(s.statsManualBottom||80);
     var scScaleF=((s.statsScale||100)/100).toFixed(3);
-    // Use dragged position if set, otherwise bottom-anchored auto position
-    var scPosCss=(s.statsX!==null&&s.statsX!==undefined&&s.statsY!==null&&s.statsY!==undefined)
+    // Use dragged position only when auto is OFF and a drag position is stored
+    var scPosCss=(s.statsAuto===false&&s.statsX!==null&&s.statsX!==undefined&&s.statsY!==null&&s.statsY!==undefined)
       ?'left:'+parseFloat(s.statsX).toFixed(1)+'%;top:'+parseFloat(s.statsY).toFixed(1)+'%;transform:translate(-50%,-50%) scale('+scScaleF+')'
       :'bottom:'+scBottomPx+'px;left:50%;transform:translateX(-50%) scale('+scScaleF+');transform-origin:50% 100%';
     var scAlwaysCss=s.statsMode==='always'
       ? '#sc.sc-always{opacity:1;pointer-events:auto}\n'+
-        '#sc.sc-always .sc-bonus{opacity:0;transition:opacity .6s .1s}\n'+
-        '#sc.sc-always.sc-upgraded .sc-bonus{opacity:1}\n'
+        '#sc.sc-always .sc-bonus{opacity:0;max-width:0;min-width:0!important;overflow:hidden;padding-left:0;transition:opacity .6s .1s,max-width .4s .1s,padding-left .4s .1s}\n'+
+        '#sc.sc-always.sc-upgraded .sc-bonus{opacity:1;max-width:60px;padding-left:3px}\n'
       : '';
     if(s.statsSkin==='game'){
       // ── Game-style skin: dark brown + gold border ──────
@@ -2112,11 +2309,11 @@ function buildAd(network){
         'border-radius:20px;padding:2px 9px;color:#ffd060}\n'+
         scAlwaysCss;
     }
-    var scRows=s.statsRows.map(function(r){
+    var scRows=s.statsRows.map(function(r,ri){
       return '<div class="sc-row">'+
         '<span class="sc-icon">'+r.icon+'</span>'+
         '<span class="sc-label">'+escHtml(r.label)+'</span>'+
-        '<span class="sc-val">'+escHtml(r.val)+'</span>'+
+        '<span class="sc-val" id="scv'+ri+'">'+escHtml(r.val)+'</span>'+
         '<span class="sc-bonus">'+escHtml(r.bonus||'')+'</span>'+
         '</div>';
     }).join('');
@@ -2138,6 +2335,12 @@ function buildAd(network){
   var lvMask=s.lvBlend>0
     ?';-webkit-mask-image:radial-gradient(ellipse 95% 95% at 50% 50%,black '+lvInnerStop+'%,transparent 100%);mask-image:radial-gradient(ellipse 95% 95% at 50% 50%,black '+lvInnerStop+'%,transparent 100%)'
     :'';
+  // ── Stage 3 blend mask ────────────────────────────────
+  var lv2BlendV=s.lv2Blend||0;
+  var lv2InnerStop=Math.round(Math.max(0,100-lv2BlendV));
+  var lv2Mask=lv2BlendV>0
+    ?';-webkit-mask-image:radial-gradient(ellipse 95% 95% at 50% 50%,black '+lv2InnerStop+'%,transparent 100%);mask-image:radial-gradient(ellipse 95% 95% at 50% 50%,black '+lv2InnerStop+'%,transparent 100%)'
+    :'';
 
   // ── Helper: image-size CSS (cover vs contained) ───────
   function imgSizeCss(sz){
@@ -2158,9 +2361,57 @@ function buildAd(network){
         'max-width:'+lO.logoSize+'vw;max-height:'+Math.round(lO.logoSize*0.45)+'vw}}\n'
     :'';
 
+  // ── Stat value helpers (for growth pre-calculation) ──
+  function parseStatNum(str){
+    if(!str)return null;
+    str=str.toString().trim();
+    var lo=str.toLowerCase();
+    if(lo.slice(-1)==='m')return parseFloat(str)*1e6;
+    if(lo.slice(-1)==='k')return parseFloat(str)*1e3;
+    return parseFloat(str.replace(/,/g,''))||null;
+  }
+  function fmtStatNum(n,orig){
+    orig=orig.toString().trim();
+    var lo=orig.toLowerCase();
+    if(lo.slice(-1)==='m'){
+      var m=n/1e6;
+      return (m<10?m.toFixed(1):Math.round(m))+(orig.slice(-1)==='M'?'M':'m');
+    }
+    if(lo.slice(-1)==='k'){
+      var k=n/1e3;
+      return (k<10?k.toFixed(1):Math.round(k))+(orig.slice(-1)==='K'?'K':'k');
+    }
+    var r=Math.round(n);
+    if(orig.indexOf(',')>=0)return r.toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    return r.toString();
+  }
+
   // ── Stars ─────────────────────────────────────────────
+  var starSteps=s.starSteps&&s.starSteps.length>=2?s.starSteps:[0,1,2,3,4,5];
+  var lastFillStep=starSteps[starSteps.length-1]||5;
+  var totalStars=Math.max(s.totalStars||lastFillStep,lastFillStep);
+  var totalTapsN=starSteps.length-1;
   var stars='';
-  for(var i=0;i<s.clicks;i++) stars+='<span class="st" id="st'+i+'">★</span>';
+  for(var i=0;i<totalStars;i++) stars+='<span class="st" id="st'+i+'">★</span>';
+  // Helper: detect video data URL
+  function isVid(src){return !!(src&&src.indexOf('data:video/')===0);}
+
+  // ── Stat growth pre-calculation ───────────────────────
+  var statsGrow=null;
+  if(s.statsEnabled&&s.statsRows&&s.statsRows.some(function(r){return r.growth;})){
+    statsGrow=s.statsRows.map(function(row){
+      var pct=parseFloat(row.growth)||0;
+      if(!pct)return null;
+      var base=parseStatNum(row.val);
+      if(base===null||base<=0)return null;
+      var vals=[];
+      for(var si=0;si<=totalTapsN;si++){
+        vals.push(fmtStatNum(base*(1+pct/100*si),row.val));
+      }
+      return vals;
+    });
+    if(!statsGrow.some(function(v){return v!==null;}))statsGrow=null;
+  }
 
   // ── Intro / Outro ─────────────────────────────────────
   var hasIntro=!!s.introSrc, hasOutro=!!s.outroSrc;
@@ -2173,8 +2424,13 @@ function buildAd(network){
 
   // ── Config JSON ───────────────────────────────────────
   var cfg=JSON.stringify({
-    n:s.clicks,
+    starSteps:starSteps,
+    totalStars:totalStars,
+    cliffhanger:s.cliffhanger||0,
     lv:s.lvSrc||defLv,
+    lv2:s.lv2Src||null,
+    stage2AtTap:(s.stage2AtTap||s.lv2Src)?Math.max(1,Math.min(s.stage2AtTap||1,totalTapsN-1)):null,
+    lv2AtTap:s.lv2Src&&s.lv2AtTap&&s.lv2AtTap<totalTapsN?s.lv2AtTap:null,
     cs:s.csSrc, ls:s.lsSrc,
     sh:s.sh, pt:s.pt, fl:s.fl,
     hasIntro:hasIntro, introDur:s.introDuration,
@@ -2182,7 +2438,8 @@ function buildAd(network){
     ptCols:PT_COLS[s.ptTheme]||PT_COLS.gold,
     ptCount:s.ptCount,
     ptSpread:s.ptSpread/100,
-    statsAlways:s.statsEnabled&&s.statsMode==='always'
+    statsAlways:s.statsEnabled&&s.statsMode==='always',
+    statsGrow:statsGrow,
   }).replace(/<\//g,'<\\/');
 
   // ── CTA action ────────────────────────────────────────
@@ -2218,10 +2475,13 @@ function buildAd(network){
 'var C='+cfg+';\n'+
 'var _csA=C.cs?(function(){var a=new Audio();a.src=C.cs;a.load();return a;})():null;\n'+
 'var _lsA=C.ls?(function(){var a=new Audio();a.src=C.ls;a.load();return a;})():null;\n'+
-'var clicks=0,done=false,paused=false,phase=C.hasIntro?"intro":"game";\n'+
+'var tapCount=0,done=false,paused=false,phase=C.hasIntro?"intro":"game";\n'+
+'if(!C.starSteps||C.starSteps.length<2){var _n=C.starSteps&&C.starSteps[0]||5;C.starSteps=[];for(var _i=0;_i<=_n;_i++)C.starSteps.push(_i);}\n'+
+'var totalTaps=C.starSteps.length-1;\n'+
 'var starsEl=document.getElementById("stars");\n'+
 'var starsItems=document.querySelectorAll(".st");\n'+
 'var ui=document.getElementById("ui");\n'+
+'var uiv=document.getElementById("uiv");\n'+
 'var uwEl=document.getElementById("uw");\n'+
 'var fg=document.getElementById("fg");\n'+
 'var hint=document.getElementById("hint");\n'+
@@ -2232,6 +2492,26 @@ function buildAd(network){
 'var logoEl=document.getElementById("logo");\n'+
 'var scEl=document.getElementById("sc");\n'+
 'if(C.statsAlways&&scEl){scEl.classList.add("sc-always");}\n'+
+'// Pre-fill initial stars\n'+
+'for(var _si=0;_si<C.starSteps[0];_si++){if(starsItems[_si])starsItems[_si].classList.add("on");}\n'+
+'// Apply initial stat growth values (tapCount=0)\n'+
+'if(C.statsGrow){C.statsGrow.forEach(function(vals,i){if(vals){var el=document.getElementById("scv"+i);if(el&&vals[0]!==undefined)el.textContent=vals[0];}});}\n'+
+'// Helper: switch visible unit element (img vs video)\n'+
+'function showUnit(src,anim,cls){\n'+
+'  cls=cls||"rev";\n'+
+'  var isV=src&&src.indexOf("data:video/")===0;\n'+
+'  if(isV){\n'+
+'    ui.style.display="none";\n'+
+'    uiv.src="";uiv.src=src;\n'+
+'    if(anim){uiv.className="";void uiv.offsetWidth;uiv.className=cls;}\n'+
+'    uiv.style.display="block";\n'+
+'  }else{\n'+
+'    uiv.style.display="none";\n'+
+'    ui.src="";ui.src=src;\n'+
+'    if(anim){ui.className="";void ui.offsetWidth;ui.className=cls;}\n'+
+'    ui.style.display="block";\n'+
+'  }\n'+
+'}\n'+
 '\n'+
 'if(C.hasIntro){\n'+
 '  var introOv=document.getElementById("intro-ov");\n'+
@@ -2293,16 +2573,36 @@ function buildAd(network){
 '  })(i);}\n'+
 '}\n'+
 '\n'+
+'function fireCliffhanger(){\n'+
+'  done=true;\n'+
+'  fg.style.display="none";\n'+
+'  hint.style.opacity="0";\n'+
+'  snd(_lsA);\n'+
+'  if(C.fl){fl.classList.add("flashing");setTimeout(function(){fl.classList.remove("flashing");},520);}\n'+
+'  setTimeout(function(){\n'+
+'    cta.classList.add("vis");\n'+
+'    if(scEl){scEl.classList.add("vis");scEl.classList.add("sc-upgraded");}\n'+
+'    setTimeout(function(){cta.classList.add("pulse");},400);\n'+
+'  },600);\n'+
+'}\n'+
+'\n'+
+'function transformStage2(){\n'+
+'  if(C.fl){fl.classList.add("flashing");setTimeout(function(){fl.classList.remove("flashing");},520);}\n'+
+'  if(C.sh){document.body.classList.add("shake");setTimeout(function(){document.body.classList.remove("shake");},450);}\n'+
+'  particles();\n'+
+'  setTimeout(function(){showUnit(C.lv,true,"rev");},260);\n'+
+'}\n'+
+'\n'+
 'function transform(){\n'+
 '  done=true;\n'+
 '  fg.style.display="none";\n'+
 '  hint.style.opacity="0";\n'+
-'  for(var i=0;i<starsItems.length;i++)starsItems[i].classList.add("on");\n'+
-'  snd(_lsA);\n'+
+'  var fillTo=C.starSteps[C.starSteps.length-1];\n'+
+'  for(var i=0;i<starsItems.length;i++){if(i<fillTo)starsItems[i].classList.add("on");}\n'+
 '  if(C.fl){fl.classList.add("flashing");setTimeout(function(){fl.classList.remove("flashing");},520);}\n'+
 '  if(C.sh){document.body.classList.add("shake");setTimeout(function(){document.body.classList.remove("shake");},450);}\n'+
 '  particles();\n'+
-'  setTimeout(function(){ui.src="";ui.src=C.lv;ui.className="rev";},260);\n'+
+'  setTimeout(function(){snd(_lsA);showUnit(C.lv2||C.lv,true,C.lv2?"rev3":"rev");},260);\n'+
 '  setTimeout(function(){lv.classList.add("lv-show");},480);\n'+
 '  if(C.hasOutro){\n'+
 '    setTimeout(function(){\n'+
@@ -2324,12 +2624,43 @@ function buildAd(network){
 '},false);\n'+
 'gameDiv.addEventListener("click",function(){if(done||paused||_t||phase!=="game")return;doTap();});\n'+
 '\n'+
+'function updateStatsGrowth(){\n'+
+'  if(!C.statsGrow)return;\n'+
+'  C.statsGrow.forEach(function(vals,i){\n'+
+'    if(!vals)return;\n'+
+'    var el=document.getElementById("scv"+i);\n'+
+'    if(el&&vals[tapCount]!==undefined)el.textContent=vals[tapCount];\n'+
+'  });\n'+
+'}\n'+
 'function doTap(){\n'+
-'  if(clicks===0)fg.style.display="none";\n'+
+'  if(tapCount===0)fg.style.display="none";\n'+
 '  snd(_csA);ripple();\n'+
-'  var st=starsItems[clicks];\n'+
-'  if(st){st.classList.add("on","pop");setTimeout(function(){st.classList.remove("pop");},350);}\n'+
-'  clicks++;if(clicks>=C.n)transform();\n'+
+'  var prev=C.starSteps[tapCount];\n'+
+'  tapCount++;\n'+
+'  var next=C.starSteps[tapCount];\n'+
+'  var fillCount=next-prev;\n'+
+'  for(var _i=prev;_i<next;_i++){\n'+
+'    (function(idx,delay){\n'+
+'      setTimeout(function(){\n'+
+'        var st=starsItems[idx];\n'+
+'        if(st){st.classList.add("on","pop");setTimeout(function(){st.classList.remove("pop");},350);}\n'+
+'      },delay);\n'+
+'    })(_i,(_i-prev)*80);\n'+
+'  }\n'+
+'  // Update stat values for growth\n'+
+'  var fillDoneMs=(fillCount-1)*80+350;\n'+
+'  setTimeout(updateStatsGrowth,fillDoneMs);\n'+
+'  // Decide next state\n'+
+'  var remaining=C.totalStars-next;\n'+
+'  if(tapCount>=totalTaps){\n'+
+'    transform();\n'+
+'  }else if(C.lv2&&C.lv2AtTap&&tapCount===C.lv2AtTap){\n'+
+'    transform();\n'+
+'  }else if(C.cliffhanger&&remaining>0&&remaining<=C.cliffhanger){\n'+
+'    setTimeout(fireCliffhanger,fillDoneMs+150);\n'+
+'  }else if(C.stage2AtTap&&tapCount===C.stage2AtTap){\n'+
+'    setTimeout(transformStage2,200);\n'+
+'  }\n'+
 '}\n'+
 '\n'+
 'cta.addEventListener("click",function(e){e.stopPropagation();'+ctaAction+';});\n'+
@@ -2423,10 +2754,12 @@ logoCss+
 '@media(orientation:landscape){#uw{left:'+lO.pos.unit.x+'%;top:'+lO.pos.unit.y+'%}}\n'+
 
 // ── UNIT IMAGE — portrait base ─────────────────────────
-'#ui{display:block;width:auto;height:auto;max-width:'+pO.unitSize+'vw;max-height:62vh;object-fit:contain;filter:drop-shadow(0 10px 28px rgba(0,0,0,.8))}\n'+
-'@media(orientation:landscape){#ui{max-width:'+lO.unitSize+'vw;max-height:unset}}\n'+
-'#ui.rev{animation:rev .45s cubic-bezier(.3,1.5,.5,1) forwards;max-width:'+pO.lvSize+'vw'+lvMask+'}\n'+
-'@media(orientation:landscape){#ui.rev{max-width:'+lO.lvSize+'vw;max-height:unset}}\n'+
+'#ui,#uiv{display:block;width:auto;height:auto;max-width:'+pO.unitSize+'vw;max-height:62vh;object-fit:contain;filter:drop-shadow(0 10px 28px rgba(0,0,0,.8))}\n'+
+'@media(orientation:landscape){#ui,#uiv{max-width:'+lO.unitSize+'vw;max-height:unset}}\n'+
+'#ui.rev,#uiv.rev{animation:rev .45s cubic-bezier(.3,1.5,.5,1) forwards;max-width:'+pO.lvSize+'vw'+lvMask+'}\n'+
+'@media(orientation:landscape){#ui.rev,#uiv.rev{max-width:'+lO.lvSize+'vw;max-height:unset}}\n'+
+'#ui.rev3,#uiv.rev3{animation:rev .45s cubic-bezier(.3,1.5,.5,1) forwards;max-width:'+(pO.lv2Size||pO.lvSize)+'vw'+lv2Mask+'}\n'+
+'@media(orientation:landscape){#ui.rev3,#uiv.rev3{max-width:'+(lO.lv2Size||lO.lvSize)+'vw;max-height:unset}}\n'+
 '@keyframes rev{0%{transform:scale(.4) rotate(-6deg);opacity:0;filter:brightness(5) drop-shadow(0 0 30px #fff)}55%{transform:scale(1.15) rotate(2deg);filter:brightness(1.6) drop-shadow(0 0 20px gold)}100%{transform:scale(1) rotate(0);opacity:1;filter:'+revEndFilter+'}}\n'+
 
 '#fg{position:absolute;bottom:-50px;left:50%;transform:translateX(-50%);font-size:clamp(36px,9vw,50px);pointer-events:none;animation:fg .75s ease-in-out infinite;filter:drop-shadow(0 3px 6px rgba(0,0,0,.7))}\n'+
@@ -2482,7 +2815,8 @@ introHtml+
 logoHtml+
 '  <div id="stars">'+stars+'</div>\n'+
 '  <div id="uw">\n'+
-'    <img id="ui" src="'+(s.unitSrc||defUnit)+'" draggable="false">\n'+
+'    <img id="ui" src="'+(isVid(s.unitSrc)?'':s.unitSrc||defUnit)+'" draggable="false"'+(isVid(s.unitSrc)?' style="display:none"':'')+'/>\n'+
+'    <video id="uiv" autoplay muted playsinline src="'+(isVid(s.unitSrc)?s.unitSrc:'')+'" draggable="false" style="display:'+(isVid(s.unitSrc)?'block':'none')+'"></video>\n'+
 '    <div id="fg">👆</div>\n'+
 '  </div>\n'+
 '  <div id="hint">'+escHtml(s.tapText)+'</div>\n'+
@@ -2580,6 +2914,7 @@ Object.keys(LIB_INFO).forEach(function(cat){ refreshLibCount(cat); });
 switchTab('assets');
 loadPresetList();
 renderStatsRows();
+renderStarStepsUI();
 refreshPreview();
 </script>
 </body>
