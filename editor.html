@@ -250,6 +250,10 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 .stat-del-btn:hover{border-color:var(--danger);color:var(--danger)}
 .stats-col-heads{display:grid;grid-template-columns:34px 1fr 60px 60px 22px;gap:5px;margin-bottom:3px}
 .stats-col-head{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:center}
+/* Fix: global input[type=text]{width:100%} overrides flex sizing — restore auto for stat inputs */
+#stats-rows-wrap input[type=text],#stats-abilities-wrap input[type=text]{width:auto}
+/* Mode selector reuses fp-btn; share skin/mode/shape button style */
+.mode-btns{display:flex;gap:5px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -530,27 +534,68 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
     <div class="sec-body">
       <div class="tog-row"><span class="tog-lbl">Show stats card after level-up</span><label class="toggle"><input type="checkbox" id="fx-stats" onchange="onStatsToggle()"><span class="trk"></span></label></div>
       <div id="stats-content" style="display:none">
-        <div class="fhint tip" style="margin-top:4px">📊 The card appears alongside the CTA button after transformation, showing upgraded stats + abilities.</div>
+
+        <!-- Card style -->
         <div>
-          <div class="flabel" style="margin-top:8px">Card Style</div>
+          <div class="flabel">Card Style</div>
           <div class="font-presets" id="stats-skin-btns">
-            <button class="fp-btn active" data-sk="game" onclick="onStatsSkin('game')" style="font-size:11px">🎮 Game</button>
-            <button class="fp-btn" data-sk="dark" onclick="onStatsSkin('dark')" style="font-size:11px">🌑 Minimal</button>
+            <button class="fp-btn active" data-sk="game" onclick="onStatsSkin('game')">🎮 Game</button>
+            <button class="fp-btn" data-sk="dark" onclick="onStatsSkin('dark')">🌑 Minimal</button>
           </div>
         </div>
-        <div class="flabel" style="margin-top:10px">Stats Rows</div>
-        <div class="stats-col-heads">
-          <div class="stats-col-head">Icon</div>
-          <div class="stats-col-head">Label</div>
-          <div class="stats-col-head">Value</div>
-          <div class="stats-col-head">+Bonus</div>
-          <div></div>
+
+        <!-- Display mode -->
+        <div>
+          <div class="flabel">Display Mode</div>
+          <div class="font-presets" id="stats-mode-btns">
+            <button class="fp-btn active" data-sm="end"    onclick="onStatsMode('end')"   >📍 After Level-Up</button>
+            <button class="fp-btn"        data-sm="always" onclick="onStatsMode('always')">👁 Always Visible</button>
+          </div>
+          <div class="fhint" id="stats-mode-hint">Card appears together with the CTA button after transformation.</div>
         </div>
-        <div id="stats-rows-wrap" style="display:flex;flex-direction:column;gap:6px"></div>
-        <button class="lib-btn" onclick="addStatRow()" style="margin-top:5px">+ Add Stat Row</button>
-        <div class="flabel" style="margin-top:12px">Abilities / Badges</div>
-        <div id="stats-abilities-wrap" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
-        <button class="lib-btn" onclick="addAbility()" style="margin-top:5px">+ Add Ability</button>
+
+        <!-- Position & size -->
+        <div>
+          <div class="flabel">Position &amp; Size</div>
+          <div class="tog-row" style="margin-bottom:4px">
+            <span class="tog-lbl" style="font-size:12px">Auto-position above CTA</span>
+            <label class="toggle"><input type="checkbox" id="stats-auto" checked onchange="onStatsPos()"><span class="trk"></span></label>
+          </div>
+          <div id="stats-manual-wrap" style="display:none">
+            <div class="flabel">Bottom Offset</div>
+            <div class="sl-row">
+              <input type="range" id="sl-stats-bot" min="0" max="400" value="80" oninput="onStatsPos()">
+              <div class="sl-val" id="stats-bot-val">80 px</div>
+            </div>
+          </div>
+          <div class="flabel" style="margin-top:6px">Card Scale</div>
+          <div class="sl-row">
+            <input type="range" id="sl-stats-scale" min="60" max="140" value="100" oninput="onStatsSize()">
+            <div class="sl-val" id="stats-scale-val">100%</div>
+          </div>
+        </div>
+
+        <!-- Stats rows -->
+        <div>
+          <div class="flabel">Stats Rows</div>
+          <div class="stats-col-heads">
+            <div class="stats-col-head">Icon</div>
+            <div class="stats-col-head">Label</div>
+            <div class="stats-col-head">Value</div>
+            <div class="stats-col-head">+Bonus</div>
+            <div></div>
+          </div>
+          <div id="stats-rows-wrap" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="lib-btn" onclick="addStatRow()" style="margin-top:5px">+ Add Stat Row</button>
+        </div>
+
+        <!-- Abilities -->
+        <div>
+          <div class="flabel">Abilities / Badges</div>
+          <div id="stats-abilities-wrap" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
+          <button class="lib-btn" onclick="addAbility()" style="margin-top:5px">+ Add Ability</button>
+        </div>
+
       </div>
     </div>
   </div>
@@ -868,7 +913,11 @@ var S = {
     {icon:'🪨',name:'Stone Skin'},
     {icon:'💔',name:'Emotional Damage'}
   ],
-  statsSkin:'game',    // 'game' | 'dark'
+  statsSkin:'game',      // 'game' | 'dark'
+  statsMode:'end',       // 'end' (with CTA) | 'always' (from game start)
+  statsAuto:true,        // auto-position above CTA
+  statsManualBottom:80,  // manual bottom px when statsAuto=false
+  statsScale:100,        // card scale %
   // v5.1 — per-orientation layout
   perOrient:{
     portrait:  makeOrientState(72, 72, 50),
@@ -1688,9 +1737,20 @@ function syncUIFromState(){
   // Per-orientation sliders + pos fields
   syncSlidersToOrientation();
 
-  // Stats skin + CTA shape buttons
+  // Stats skin / mode / position / size + CTA shape
   document.querySelectorAll('[data-sk]').forEach(function(b){b.classList.toggle('active',b.dataset.sk===s.statsSkin);});
+  document.querySelectorAll('[data-sm]').forEach(function(b){b.classList.toggle('active',b.dataset.sm===s.statsMode);});
   document.querySelectorAll('[data-sh]').forEach(function(b){b.classList.toggle('active',b.dataset.sh===s.ctaShape);});
+  var sauto=document.getElementById('stats-auto');if(sauto)sauto.checked=s.statsAuto!==false;
+  var smw=document.getElementById('stats-manual-wrap');if(smw)smw.style.display=s.statsAuto!==false?'none':'';
+  var slsb=document.getElementById('sl-stats-bot');if(slsb)slsb.value=s.statsManualBottom||80;
+  var sbv=document.getElementById('stats-bot-val');if(sbv)sbv.textContent=(s.statsManualBottom||80)+' px';
+  var slss=document.getElementById('sl-stats-scale');if(slss)slss.value=s.statsScale||100;
+  var ssv=document.getElementById('stats-scale-val');if(ssv)ssv.textContent=(s.statsScale||100)+'%';
+  var smh=document.getElementById('stats-mode-hint');
+  if(smh)smh.textContent=s.statsMode==='always'
+    ?'Card is visible from game start; bonus values reveal after level-up.'
+    :'Card appears together with the CTA button after transformation.';
 
   // Stats rows UI
   renderStatsRows();
@@ -1707,6 +1767,27 @@ function onStatsToggle(){
 function onStatsSkin(skin){
   S.statsSkin=skin;
   document.querySelectorAll('[data-sk]').forEach(function(b){b.classList.toggle('active',b.dataset.sk===skin);});
+  refreshPreview();
+}
+function onStatsMode(mode){
+  S.statsMode=mode;
+  document.querySelectorAll('[data-sm]').forEach(function(b){b.classList.toggle('active',b.dataset.sm===mode);});
+  var hint=document.getElementById('stats-mode-hint');
+  if(hint) hint.textContent=mode==='always'
+    ?'Card is visible from game start; bonus values reveal after level-up.'
+    :'Card appears together with the CTA button after transformation.';
+  refreshPreview();
+}
+function onStatsPos(){
+  S.statsAuto=document.getElementById('stats-auto').checked;
+  S.statsManualBottom=parseInt(document.getElementById('sl-stats-bot').value)||80;
+  document.getElementById('stats-bot-val').textContent=S.statsManualBottom+' px';
+  document.getElementById('stats-manual-wrap').style.display=S.statsAuto?'none':'';
+  refreshPreview();
+}
+function onStatsSize(){
+  S.statsScale=parseInt(document.getElementById('sl-stats-scale').value)||100;
+  document.getElementById('stats-scale-val').textContent=S.statsScale+'%';
   refreshPreview();
 }
 function onCtaShape(shape){
@@ -1935,11 +2016,19 @@ function buildAd(network){
   var statsHtml='', statsCss='';
   if(s.statsEnabled&&s.statsRows&&s.statsRows.length>0){
     var ctaBtnH=Math.round(ctaPadPx*2+ctaFontPx*1.5);
-    var scBottom=s.ctaBottom+ctaBtnH+8;
+    var scAutoBottom=s.ctaBottom+ctaBtnH+8;
+    var scBottomPx=(s.statsAuto!==false)?scAutoBottom:(s.statsManualBottom||80);
+    var scScaleF=((s.statsScale||100)/100).toFixed(3);
+    var scAlwaysCss=s.statsMode==='always'
+      ? '#sc.sc-always{opacity:1;pointer-events:auto}\n'+
+        '#sc.sc-always .sc-bonus{opacity:0;transition:opacity .6s .1s}\n'+
+        '#sc.sc-always.sc-upgraded .sc-bonus{opacity:1}\n'
+      : '';
     if(s.statsSkin==='game'){
       // ── Game-style skin: dark brown + gold border ──────
       statsCss=
-        '#sc{position:fixed;bottom:'+scBottom+'px;left:50%;transform:translateX(-50%);'+
+        '#sc{position:fixed;bottom:'+scBottomPx+'px;left:50%;'+
+        'transform:translateX(-50%) scale('+scScaleF+');transform-origin:50% 100%;'+
         'width:min(92vw,310px);'+
         'background:linear-gradient(180deg,#3a2008 0%,#1c1004 100%);'+
         'border:2px solid #a07820;'+
@@ -1960,11 +2049,13 @@ function buildAd(network){
         '.sc-ability{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;'+
         'background:linear-gradient(135deg,rgba(160,110,20,.4),rgba(100,65,5,.4));'+
         'border:1px solid rgba(190,145,30,.6);border-radius:4px;'+
-        'padding:3px 10px;color:#eacc60}\n';
+        'padding:3px 10px;color:#eacc60}\n'+
+        scAlwaysCss;
     } else {
       // ── Minimal dark skin ──────────────────────────────
       statsCss=
-        '#sc{position:fixed;bottom:'+scBottom+'px;left:50%;transform:translateX(-50%);'+
+        '#sc{position:fixed;bottom:'+scBottomPx+'px;left:50%;'+
+        'transform:translateX(-50%) scale('+scScaleF+');transform-origin:50% 100%;'+
         'width:min(90vw,300px);background:rgba(6,3,18,0.9);'+
         'border:1px solid rgba(200,160,60,0.4);border-radius:14px;'+
         'padding:10px 14px 8px;'+
@@ -1979,7 +2070,8 @@ function buildAd(network){
         '.sc-div{border:none;border-top:1px solid rgba(255,255,255,0.1);margin:5px 0}\n'+
         '.sc-abilities{display:flex;flex-wrap:wrap;gap:4px}\n'+
         '.sc-ability{font-size:10px;background:rgba(255,180,0,0.12);border:1px solid rgba(255,180,0,0.35);'+
-        'border-radius:20px;padding:2px 9px;color:#ffd060}\n';
+        'border-radius:20px;padding:2px 9px;color:#ffd060}\n'+
+        scAlwaysCss;
     }
     var scRows=s.statsRows.map(function(r){
       return '<div class="sc-row">'+
@@ -2050,7 +2142,8 @@ function buildAd(network){
     hasOutro:hasOutro,
     ptCols:PT_COLS[s.ptTheme]||PT_COLS.gold,
     ptCount:s.ptCount,
-    ptSpread:s.ptSpread/100
+    ptSpread:s.ptSpread/100,
+    statsAlways:s.statsEnabled&&s.statsMode==='always'
   }).replace(/<\//g,'<\\/');
 
   // ── CTA action ────────────────────────────────────────
@@ -2099,6 +2192,7 @@ function buildAd(network){
 'var ptCont=document.getElementById("particles");\n'+
 'var logoEl=document.getElementById("logo");\n'+
 'var scEl=document.getElementById("sc");\n'+
+'if(C.statsAlways&&scEl){scEl.classList.add("sc-always");}\n'+
 '\n'+
 'if(C.hasIntro){\n'+
 '  var introOv=document.getElementById("intro-ov");\n'+
@@ -2176,10 +2270,10 @@ function buildAd(network){
 '      var outroOv=document.getElementById("outro-ov");\n'+
 '      outroOv.style.transition="opacity 0.7s";\n'+
 '      outroOv.style.opacity="1";\n'+
-'      setTimeout(function(){cta.classList.add("vis");if(scEl)scEl.classList.add("vis");setTimeout(function(){cta.classList.add("pulse");},600);},700);\n'+
+'      setTimeout(function(){cta.classList.add("vis");if(scEl){scEl.classList.add("vis");scEl.classList.add("sc-upgraded");}setTimeout(function(){cta.classList.add("pulse");},600);},700);\n'+
 '    },1600);\n'+
 '  } else {\n'+
-'    setTimeout(function(){cta.classList.add("vis");if(scEl)scEl.classList.add("vis");setTimeout(function(){cta.classList.add("pulse");},600);},2000);\n'+
+'    setTimeout(function(){cta.classList.add("vis");if(scEl){scEl.classList.add("vis");scEl.classList.add("sc-upgraded");}setTimeout(function(){cta.classList.add("pulse");},600);},2000);\n'+
 '  }\n'+
 '}\n'+
 '\n'+
