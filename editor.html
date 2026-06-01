@@ -423,11 +423,6 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
     <div class="sec-hd" onclick="toggleSec('s-logo')"><span class="sec-icon">🎨</span><span class="sec-title">Branding &amp; Logo</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div>
-        <div class="flabel">Playable Name</div>
-        <input type="text" id="ad-name" value="magic-war-legends" placeholder="my-playable-ad" oninput="onAdName()">
-        <div class="fhint">Used as the filename prefix for all network exports.</div>
-      </div>
-      <div>
         <div class="flabel">Game Logo</div>
         <div class="up-area" id="ua-logo">
           <input type="file" id="fi-logo" accept="image/*" style="display:none" onchange="fileLoaded('logo',this)">
@@ -935,6 +930,11 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   <div class="sec" id="s-net">
     <div class="sec-hd" onclick="toggleSec('s-net')"><span class="sec-icon">📡</span><span class="sec-title">Network Options</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
+      <div>
+        <div class="flabel">Playable Name</div>
+        <input type="text" id="ad-name" value="magic-war-legends" placeholder="my-playable-ad" oninput="onAdName()">
+        <div class="fhint">Filename prefix for all exports — e.g. <code>my-game-facebook.html</code></div>
+      </div>
       <div class="tog-row">
         <span class="tog-lbl">⚖️ Responsible play footer <span style="font-size:10px;color:var(--muted)">(Google gambling)</span></span>
         <label class="toggle"><input type="checkbox" id="fx-rp" onchange="onFx()"><span class="trk"></span></label>
