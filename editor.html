@@ -441,6 +441,11 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
         </div>
         <div class="fhint">Percentage of screen width.</div>
       </div>
+      <div>
+        <div class="flabel">Store / CTA URL</div>
+        <input type="url" id="u-cta" value="https://example.com" placeholder="https://…" oninput="onText()">
+        <div class="fhint">App Store / Play Store link. Used by Unity, AppLovin &amp; preview CTA button.</div>
+      </div>
     </div>
   </div>
 
@@ -777,13 +782,8 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
         <div class="fhint">% from top of screen. Move up if overlapping the unit.</div>
       </div>
 
-      <!-- CTA text + URL -->
+      <!-- CTA text only -->
       <div><div class="flabel">CTA Button Text</div><input type="text" id="t-cta" value="PLAY NOW — FREE" maxlength="25" oninput="onText()"></div>
-      <div>
-        <div class="flabel">Store / CTA URL</div>
-        <input type="url" id="u-cta" value="https://example.com" placeholder="https://…" oninput="onText()">
-        <div class="fhint">App Store / Play Store link. Used by Unity, AppLovin &amp; preview.</div>
-      </div>
 
       <!-- CTA button styling -->
       <div>
@@ -945,9 +945,8 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 
 <footer>
   <div class="foot-note">
-    Each button exports one network-ready file.<br>
-    <strong>Google</strong>: rename to <code>index.html</code>, zip. &nbsp;
-    <strong>Mintegral</strong>: put <code>index.html</code> in a named subfolder, zip.
+    Each button exports one network-ready file. &nbsp;
+    <strong>Google</strong> &amp; <strong>Mintegral</strong> download as <code>.zip</code> (correct format for each network).
   </div>
   <div class="exp-group">
     <button class="exp-btn exp-fb"    onclick="exportAd('fb')">📘 Facebook</button>
@@ -1605,20 +1604,53 @@ function updateSizePill(html){
 // ══════════════════════════════════════════════════════════
 //  EXPORT
 // ══════════════════════════════════════════════════════════
-var FN={
-  fb:'magic-war-legends-facebook.html',
-  google:'magic-war-legends-google.html',
-  unity:'magic-war-legends-unity-applovin.html',
-  mintegral:'magic-war-legends-mintegral.html'
-};
+function buildZip(entries){
+  // entries: [{path:string, data:Uint8Array}]
+  var CRC=new Int32Array(256);
+  for(var i=0;i<256;i++){var c=i;for(var j=0;j<8;j++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);CRC[i]=c;}
+  function crc32(buf){var c=-1;for(var i=0;i<buf.length;i++)c=(c>>>8)^CRC[(c^buf[i])&0xFF];return(c^-1)>>>0;}
+  var enc=new TextEncoder();
+  var LH=30,CD=46,EOCD=22;
+  var items=entries.map(function(e){var pb=enc.encode(e.path);return{pb:pb,data:e.data,crc:crc32(e.data),off:0};});
+  var total=items.reduce(function(s,e){return s+LH+e.pb.length+e.data.length;},0)
+    +items.reduce(function(s,e){return s+CD+e.pb.length;},0)+EOCD;
+  var buf=new Uint8Array(total),v=new DataView(buf.buffer),p=0;
+  function w32(n){v.setUint32(p,n,true);p+=4;}
+  function w16(n){v.setUint16(p,n,true);p+=2;}
+  function wb(a){buf.set(a,p);p+=a.length;}
+  items.forEach(function(e){
+    e.off=p;
+    w32(0x04034B50);w16(20);w16(0);w16(0);w16(0);w16(0);
+    w32(e.crc);w32(e.data.length);w32(e.data.length);w16(e.pb.length);w16(0);
+    wb(e.pb);wb(e.data);
+  });
+  var cdStart=p;
+  items.forEach(function(e){
+    w32(0x02014B50);w16(20);w16(20);w16(0);w16(0);w16(0);w16(0);
+    w32(e.crc);w32(e.data.length);w32(e.data.length);w16(e.pb.length);w16(0);w16(0);
+    w16(0);w16(0);w32(0);w32(e.off);wb(e.pb);
+  });
+  var cdSize=p-cdStart;
+  w32(0x06054B50);w16(0);w16(0);w16(items.length);w16(items.length);w32(cdSize);w32(cdStart);w16(0);
+  return buf;
+}
+function _dlBlob(blob,filename){
+  var url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+}
 function exportAd(network){
   var html=buildAd(network);
-  var blob=new Blob([html],{type:'text/html'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;a.download=FN[network];
-  document.body.appendChild(a);a.click();
-  document.body.removeChild(a);URL.revokeObjectURL(url);
+  if(network==='google'){
+    var data=new TextEncoder().encode(html);
+    _dlBlob(new Blob([buildZip([{path:'index.html',data:data}])],{type:'application/zip'}),'magic-war-legends-google.zip');
+  } else if(network==='mintegral'){
+    var data=new TextEncoder().encode(html);
+    _dlBlob(new Blob([buildZip([{path:'magic-war-legends/index.html',data:data}])],{type:'application/zip'}),'magic-war-legends-mintegral.zip');
+  } else {
+    var fn={fb:'magic-war-legends-facebook.html',unity:'magic-war-legends-unity-applovin.html'}[network]||network+'.html';
+    _dlBlob(new Blob([html],{type:'text/html'}),fn);
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2808,9 +2840,12 @@ function buildAd(network){
     initScript=
 '(function(){\n'+
 '  var started=false;\n'+
-'  function tryStart(){if(started)return;started=true;window.addEventListener("load",function(){(function(){\n'+
+'  function tryStart(){if(started)return;started=true;\n'+
+'    function _r(){(function(){\n'+
 gameInner+
-'  })();});}\n'+
+'    })();}\n'+
+'    if(document.readyState==="complete")_r();else window.addEventListener("load",_r);\n'+
+'  }\n'+
 '  if(typeof mraid!=="undefined"){\n'+
 '    var st=mraid.getState();\n'+
 '    if(st==="loading"){mraid.addEventListener("ready",function(){if(mraid.isViewable())tryStart();});}\n'+
