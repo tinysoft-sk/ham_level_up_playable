@@ -423,6 +423,11 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
     <div class="sec-hd" onclick="toggleSec('s-logo')"><span class="sec-icon">🎨</span><span class="sec-title">Branding &amp; Logo</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div>
+        <div class="flabel">Playable Name</div>
+        <input type="text" id="ad-name" value="magic-war-legends" placeholder="my-playable-ad" oninput="onAdName()">
+        <div class="fhint">Used as the filename prefix for all network exports.</div>
+      </div>
+      <div>
         <div class="flabel">Game Logo</div>
         <div class="up-area" id="ua-logo">
           <input type="file" id="fi-logo" accept="image/*" style="display:none" onchange="fileLoaded('logo',this)">
@@ -785,7 +790,21 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
       <!-- CTA text only -->
       <div><div class="flabel">CTA Button Text</div><input type="text" id="t-cta" value="PLAY NOW — FREE" maxlength="25" oninput="onText()"></div>
 
-      <!-- CTA button styling -->
+      <!-- Custom button image -->
+      <div>
+        <div class="flabel">Custom Button Image <span style="color:var(--muted);font-size:10px;text-transform:none;font-weight:400;letter-spacing:0">(optional)</span></div>
+        <div class="up-area" id="ua-ctaBtn">
+          <input type="file" id="fi-ctaBtn" accept="image/*" style="display:none" onchange="fileLoaded('ctaBtn',this)">
+          <div class="up-ico">🎯</div><div class="up-txt">Click or drag &amp; drop</div>
+          <div class="up-sub">PNG with transparency recommended</div>
+          <img class="up-prev" id="pv-ctaBtn"><button class="up-x" onclick="clearImg(event,'ctaBtn')">×</button>
+        </div>
+        <div class="fsize" id="sz-ctaBtn"></div>
+        <div class="fhint">Replaces the styled button with your image. Button text is hidden.</div>
+      </div>
+
+      <!-- CTA button styling (hidden when custom image is set) -->
+      <div id="cta-style-wrap">
       <div>
         <div class="flabel">Button Color</div>
         <div class="cta-schemes" id="cta-schemes"></div>
@@ -810,6 +829,8 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
           <button class="fp-btn" data-sh="rounded" onclick="onCtaShape('rounded')" style="font-size:11px">▭ Rounded</button>
         </div>
       </div>
+      </div><!-- /cta-style-wrap -->
+
       <div>
         <div class="flabel">Button Position (bottom offset)</div>
         <div class="sl-row">
@@ -1002,6 +1023,7 @@ var S = {
   lv2Blend:40,
   stage2AtTap:null,
   lv2AtTap:null,
+  adName:'magic-war-legends',
   tapText:'TAP TO LEVEL UP!',
   lvText:'★ LEVEL UP! ★',
   ctaText:'PLAY NOW — FREE',
@@ -1028,6 +1050,7 @@ var S = {
   ctaScheme:'orange',
   ctaBgColor:'#ff7a00',
   ctaTextColor:'#ffffff',
+  ctaBtnSrc:null,
   ctaSize:100,
   ctaBottom:20,
   ctaShape:'pill',     // 'pill' | 'rounded'
@@ -1215,7 +1238,7 @@ function syncSlidersToOrientation(){
 // ══════════════════════════════════════════════════════════
 //  UPLOADS — IMAGES
 // ══════════════════════════════════════════════════════════
-['unit','lv','lv2','logo','bgp','bgl','intro','outro'].forEach(function(k){
+['unit','lv','lv2','logo','bgp','bgl','intro','outro','ctaBtn'].forEach(function(k){
   var area=document.getElementById('ua-'+k);
   if(!area)return;
   area.addEventListener('dragover',function(e){e.preventDefault();area.classList.add('drag');});
@@ -1239,6 +1262,7 @@ function readImg(k,f){
     document.getElementById('ua-'+k).classList.add('has');
     showSize('sz-'+k,f.size);
     saveToLib(k,f.name,f.size,e.target.result);
+    if(k==='ctaBtn'){var _sw=document.getElementById('cta-style-wrap');if(_sw)_sw.style.display='none';}
     refreshPreview();
   };
   r.readAsDataURL(f);
@@ -1251,6 +1275,7 @@ function clearImg(e,k){
   document.getElementById('ua-'+k).classList.remove('has');
   document.getElementById('fi-'+k).value='';
   hideSize('sz-'+k);
+  if(k==='ctaBtn'){var _sw=document.getElementById('cta-style-wrap');if(_sw)_sw.style.display='';}
   refreshPreview();
 }
 
@@ -1430,6 +1455,9 @@ function onVignette(v){
   document.getElementById('vig-inner').style.opacity=v/100;
   document.getElementById('vig-preview').style.opacity=v>0?1:0.3;
   refreshPreview();
+}
+function onAdName(){
+  S.adName=(document.getElementById('ad-name').value.trim())||'playable';
 }
 function onText(){
   S.tapText=document.getElementById('t-tap').value;
@@ -1639,16 +1667,20 @@ function _dlBlob(blob,filename){
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();
   document.body.removeChild(a);URL.revokeObjectURL(url);
 }
+function adSlug(){
+  return (S.adName||'playable').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'playable';
+}
 function exportAd(network){
   var html=buildAd(network);
+  var slug=adSlug();
   if(network==='google'){
     var data=new TextEncoder().encode(html);
-    _dlBlob(new Blob([buildZip([{path:'index.html',data:data}])],{type:'application/zip'}),'magic-war-legends-google.zip');
+    _dlBlob(new Blob([buildZip([{path:'index.html',data:data}])],{type:'application/zip'}),slug+'-google.zip');
   } else if(network==='mintegral'){
     var data=new TextEncoder().encode(html);
-    _dlBlob(new Blob([buildZip([{path:'magic-war-legends/index.html',data:data}])],{type:'application/zip'}),'magic-war-legends-mintegral.zip');
+    _dlBlob(new Blob([buildZip([{path:slug+'/index.html',data:data}])],{type:'application/zip'}),slug+'-mintegral.zip');
   } else {
-    var fn={fb:'magic-war-legends-facebook.html',unity:'magic-war-legends-unity-applovin.html'}[network]||network+'.html';
+    var fn={fb:slug+'-facebook.html',unity:slug+'-unity-applovin.html'}[network]||slug+'-'+network+'.html';
     _dlBlob(new Blob([html],{type:'text/html'}),fn);
   }
 }
@@ -1668,7 +1700,8 @@ var LIB_INFO={
   intro:{label:'Intro GIF',    icon:'🎬', audio:false},
   outro:{label:'Outro GIF',    icon:'🏁', audio:false},
   cs:   {label:'Click Sound',  icon:'🥁', audio:true },
-  ls:   {label:'Level Sound',  icon:'⚡', audio:true }
+  ls:   {label:'Level Sound',  icon:'⚡', audio:true },
+  ctaBtn:{label:'Button Image', icon:'🎯', audio:false}
 };
 
 function _openDB(cb){
@@ -1931,10 +1964,15 @@ function syncUIFromState(){
   var s=S;
 
   // Text inputs
+  var _nameEl=document.getElementById('ad-name');if(_nameEl)_nameEl.value=s.adName||'magic-war-legends';
   document.getElementById('t-tap').value=s.tapText;
   document.getElementById('t-lv').value=s.lvText;
   document.getElementById('t-cta').value=s.ctaText;
   document.getElementById('u-cta').value=s.ctaUrl;
+  // ctaBtn image
+  var _pvBtn=document.getElementById('pv-ctaBtn'),_uaBtn=document.getElementById('ua-ctaBtn');
+  if(_pvBtn){_pvBtn.src=s.ctaBtnSrc||'';if(_uaBtn)_uaBtn.classList.toggle('has',!!s.ctaBtnSrc);}
+  var _sw=document.getElementById('cta-style-wrap');if(_sw)_sw.style.display=s.ctaBtnSrc?'none':'';
 
   // Helper: set slider + display
   function sl(id,val,dispId,fmt){
@@ -2373,7 +2411,7 @@ function buildAd(network){
   // ── v6.0: Stats card ─────────────────────────────────────
   var statsHtml='', statsCss='';
   if(s.statsEnabled&&s.statsRows&&s.statsRows.length>0){
-    var ctaBtnH=Math.round(ctaPadPx*2+ctaFontPx*1.5);
+    var ctaBtnH=s.ctaBtnSrc?60:Math.round(ctaPadPx*2+ctaFontPx*1.5);
     var scAutoBottom=s.ctaBottom+ctaBtnH+8;
     var scBottomPx=(s.statsAuto!==false)?scAutoBottom:(s.statsManualBottom||80);
     var scScaleF=((s.statsScale||100)/100).toFixed(3);
@@ -2960,7 +2998,11 @@ logoCss+
 '@keyframes lvA{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}35%{opacity:1;transform:translate(-50%,-50%) scale(1.18)}60%{transform:translate(-50%,-50%) scale(.94)}80%,100%{opacity:1;transform:translate(-50%,-60%) scale(1)}}\n'+
 
 // ── CTA (z:12) ─────────────────────────────────────────
-'#cta{position:fixed;bottom:'+s.ctaBottom+'px;left:50%;transform:translateX(-50%) translateY(22px);width:min(85vw,'+ctaMaxW+'px);background:'+ctaBg+';color:'+ctaTextCol+';font-size:'+ctaFontPx+'px;font-weight:900;text-align:center;letter-spacing:2px;text-transform:uppercase;padding:'+ctaPadPx+'px 0;border-radius:'+ctaRadius+';border:none;cursor:pointer;box-shadow:'+ctaBoxShadow+';opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'+
+(s.ctaBtnSrc
+  ?'#cta{position:fixed;bottom:'+s.ctaBottom+'px;left:50%;transform:translateX(-50%) translateY(22px);max-width:min(85vw,'+ctaMaxW+'px);background:none;border:none;box-shadow:none;padding:0;border-radius:0;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'+
+   '#cta img{max-width:100%;display:block;filter:drop-shadow(0 4px 18px rgba(0,0,0,.55))}\n'
+  :'#cta{position:fixed;bottom:'+s.ctaBottom+'px;left:50%;transform:translateX(-50%) translateY(22px);width:min(85vw,'+ctaMaxW+'px);background:'+ctaBg+';color:'+ctaTextCol+';font-size:'+ctaFontPx+'px;font-weight:900;text-align:center;letter-spacing:2px;text-transform:uppercase;padding:'+ctaPadPx+'px 0;border-radius:'+ctaRadius+';border:none;cursor:pointer;box-shadow:'+ctaBoxShadow+';opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'
+)+
 '#cta.vis{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}\n'+
 '#cta.pulse{animation:ctaP .9s ease-in-out infinite}\n'+
 '@keyframes ctaP{0%,100%{transform:translateX(-50%) translateY(0) scale(1)}50%{transform:translateX(-50%) translateY(-5px) scale(1.04)}}\n'+
@@ -2997,7 +3039,7 @@ outroHtml+
 '<div id="lv">'+escHtml(s.lvText)+'</div>\n'+
 statsHtml+
 gpHtml+
-'<button id="cta">'+escHtml(s.ctaText)+'</button>\n'+
+'<button id="cta">'+(s.ctaBtnSrc?'<img src="'+s.ctaBtnSrc+'" draggable="false" alt="">':escHtml(s.ctaText))+'</button>\n'+
 '<div id="fl"></div>\n'+
 '<div id="particles"></div>\n'+
 rpFooter+
