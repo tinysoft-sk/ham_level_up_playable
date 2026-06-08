@@ -935,6 +935,17 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
         <input type="text" id="ad-name" value="magic-war-legends" placeholder="my-playable-ad" oninput="onAdName()">
         <div class="fhint">Filename prefix for all exports — e.g. <code>my-game-facebook.html</code></div>
       </div>
+      <div>
+        <div class="flabel">Save / Load Project</div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="exp-btn" style="flex:1;font-size:12px;background:linear-gradient(135deg,#1a3a60,#0d2240);color:#88bbff;box-shadow:0 3px 12px rgba(0,0,0,.4)" onclick="exportPlayable()">💾 Save .json</button>
+          <label class="exp-btn" style="flex:1;font-size:12px;background:linear-gradient(135deg,#1a3a60,#0d2240);color:#88bbff;box-shadow:0 3px 12px rgba(0,0,0,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+            📂 Load .json
+            <input type="file" accept=".json" style="display:none" onchange="importPlayable(this.files[0]);this.value=''">
+          </label>
+        </div>
+        <div class="fhint">Saves the full project (all settings + assets) as a .json file. Load it on any device to continue editing.</div>
+      </div>
       <div class="tog-row">
         <span class="tog-lbl">⚖️ Responsible play footer <span style="font-size:10px;color:var(--muted)">(Google gambling)</span></span>
         <label class="toggle"><input type="checkbox" id="fx-rp" onchange="onFx()"><span class="trk"></span></label>
@@ -1666,6 +1677,31 @@ function _dlBlob(blob,filename){
   var url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();
   document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+// ── Project Save / Load ───────────────────────────────────
+function exportPlayable(){
+  var json=JSON.stringify(S,null,2);
+  _dlBlob(new Blob([json],{type:'application/json'}),adSlug()+'.json');
+}
+function importPlayable(file){
+  if(!file)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      // Merge loaded data over current state (preserves defaults for missing keys)
+      Object.assign(S,data);
+      // Nested orient state needs explicit handling
+      if(data.perOrient){
+        S.perOrient=data.perOrient;
+        if(!S.perOrient.portrait) S.perOrient.portrait=makeOrientState(72,72,50);
+        if(!S.perOrient.landscape)S.perOrient.landscape=makeOrientState(55,55,35);
+      }
+      syncUIFromState();
+      refreshPreview();
+    }catch(err){alert('Could not load file — make sure it is a valid playable .json.');}
+  };
+  r.readAsText(file);
 }
 function adSlug(){
   return (S.adName||'playable').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'playable';
