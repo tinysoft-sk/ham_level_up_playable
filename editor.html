@@ -239,6 +239,14 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
 
+/* ── WEBP AUTO-COMPRESS BAR ── */
+#webp-bar{display:flex;flex-direction:column;gap:7px;margin:10px 11px 4px;padding:9px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:8px}
+.webp-toggle-lbl{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer}
+.webp-toggle-lbl input{cursor:pointer}
+.webp-dim{color:var(--muted);font-weight:400}
+.webp-q-lbl{font-size:11px;color:var(--muted);white-space:nowrap}
+#webp-q-row{align-items:center;gap:8px}
+
 /* ── STAR STEPS EDITOR ── */
 .ss-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:6px 0 2px}
 .ss-step{display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -302,6 +310,20 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
     <button class="tab-btn" data-tab="game" onclick="switchTab('game')">⭐ Game</button>
     <button class="tab-btn" data-tab="style" onclick="switchTab('style')">🎨 Style</button>
     <button class="tab-btn" data-tab="export" onclick="switchTab('export')">📡 Export</button>
+  </div>
+
+  <!-- WEBP AUTO-COMPRESS -->
+  <div id="webp-bar">
+    <label class="webp-toggle-lbl">
+      <input type="checkbox" id="webp-toggle" checked onchange="onWebpToggle(this)">
+      <span>🗜️ Auto-compress images → WebP <span class="webp-dim">(PNG / JPG)</span></span>
+    </label>
+    <div id="webp-q-row" class="sl-row">
+      <span class="webp-q-lbl">Quality</span>
+      <input type="range" id="webp-q" min="60" max="100" value="85" oninput="onWebpQuality(this.value)">
+      <div class="sl-val" id="webp-q-val">85%</div>
+    </div>
+    <div class="fhint" style="margin-top:0">Static PNG/JPG uploads are re-encoded to WebP in-browser. Animated GIF/WebP and video pass through untouched.</div>
   </div>
 
   <!-- Base Unit -->
@@ -1265,18 +1287,62 @@ function syncSlidersToOrientation(){
 
 function fileLoaded(k,inp){ var f=inp.files[0];if(f)readImg(k,f); }
 
-function readImg(k,f){
+// ── WebP auto-compression (editor-only settings; not part of the ad) ──
+var webpEnabled=true, webpQuality=0.85;
+function onWebpToggle(cb){
+  webpEnabled=cb.checked;
+  var row=document.getElementById('webp-q-row');
+  if(row)row.style.display=webpEnabled?'':'none';
+}
+function onWebpQuality(v){ webpQuality=v/100; document.getElementById('webp-q-val').textContent=v+'%'; }
+
+// bytes encoded in a base64 data URL
+function dataUrlBytes(u){
+  var c=u.indexOf(',');if(c<0)return 0;
+  var b=u.slice(c+1);
+  var pad=b.charCodeAt(b.length-1)===61?(b.charCodeAt(b.length-2)===61?2:1):0;
+  return Math.floor(b.length*0.75)-pad;
+}
+
+// Read an image File and, for static PNG/JPG, re-encode to WebP when smaller.
+// Animated GIF/WebP and video pass through untouched. cb({src,size,name,note}).
+function loadImageFile(f,cb){
   var r=new FileReader();
   r.onload=function(e){
-    S[k+'Src']=e.target.result;
-    document.getElementById('pv-'+k).src=e.target.result;
-    document.getElementById('ua-'+k).classList.add('has');
-    showSize('sz-'+k,f.size);
-    saveToLib(k,f.name,f.size,e.target.result);
-    if(k==='ctaBtn'){var _sw=document.getElementById('cta-style-wrap');if(_sw)_sw.style.display='none';}
-    refreshPreview();
+    var orig=e.target.result, plain={src:orig,size:f.size,name:f.name,note:''};
+    var canConvert=webpEnabled&&(f.type==='image/png'||f.type==='image/jpeg'||f.type==='image/jpg');
+    if(!canConvert){ cb(plain); return; }
+    var img=new Image();
+    img.onload=function(){
+      try{
+        var cv=document.createElement('canvas');
+        cv.width=img.naturalWidth; cv.height=img.naturalHeight;
+        cv.getContext('2d').drawImage(img,0,0);
+        var webp=cv.toDataURL('image/webp',webpQuality);
+        if(webp.indexOf('data:image/webp')!==0){ cb(plain); return; } // no WebP encoder
+        var wSize=dataUrlBytes(webp);
+        if(wSize<f.size){
+          cb({src:webp, size:wSize, name:f.name.replace(/\.(png|jpe?g)$/i,'')+'.webp',
+              note:'✓ WebP −'+Math.round((1-wSize/f.size)*100)+'%'});
+        } else { cb(plain); } // already tiny — keep original
+      }catch(err){ cb(plain); }
+    };
+    img.onerror=function(){ cb(plain); };
+    img.src=orig;
   };
   r.readAsDataURL(f);
+}
+
+function readImg(k,f){
+  loadImageFile(f,function(res){
+    S[k+'Src']=res.src;
+    document.getElementById('pv-'+k).src=res.src;
+    document.getElementById('ua-'+k).classList.add('has');
+    showSize('sz-'+k,res.size,res.note);
+    saveToLib(k,res.name,res.size,res.src);
+    if(k==='ctaBtn'){var _sw=document.getElementById('cta-style-wrap');if(_sw)_sw.style.display='none';}
+    refreshPreview();
+  });
 }
 
 function clearImg(e,k){
@@ -1322,11 +1388,13 @@ function clearSound(e,k){
 // ══════════════════════════════════════════════════════════
 //  SIZE HELPER
 // ══════════════════════════════════════════════════════════
-function showSize(id,bytes){
+function showSize(id,bytes,note){
   var el=document.getElementById(id);
   var cls=bytes>1024*1024?'bad':bytes>500*1024?'warn':'ok';
   el.className='fsize shown '+cls;
-  el.textContent=bytes>=1024*1024?((bytes/1024/1024).toFixed(1)+' MB — consider compressing'):((bytes/1024).toFixed(0)+' KB');
+  var t=bytes>=1024*1024?((bytes/1024/1024).toFixed(1)+' MB — consider compressing'):((bytes/1024).toFixed(0)+' KB');
+  if(note)t+=' · '+note;
+  el.textContent=t;
 }
 function hideSize(id){var el=document.getElementById(id);el.className='fsize';el.textContent='';}
 
@@ -2161,17 +2229,15 @@ function onGpToggle(){
 }
 function gpIconLoaded(slot,inp){
   var f=inp.files[0];if(!f)return;
-  var r=new FileReader();
-  r.onload=function(e){
+  loadImageFile(f,function(res){
     var key=slot==='r1'?'gpR1Src':'gpR2Src';
-    S[key]=e.target.result;
+    S[key]=res.src;
     var pv=document.getElementById('pv-gp'+slot);
     var ph=document.getElementById('gp'+slot+'-ph');
-    if(pv){pv.src=e.target.result;pv.style.display='block';}
+    if(pv){pv.src=res.src;pv.style.display='block';}
     if(ph)ph.style.display='none';
     refreshPreview();
-  };
-  r.readAsDataURL(f);
+  });
 }
 function onStatsSkin(skin){
   S.statsSkin=skin;
