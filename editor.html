@@ -669,7 +669,18 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
         </div>
         <div class="fsize" id="sz-ls"></div>
         <button class="lib-btn" onclick="openLib('ls')">📁 Choose from library <span class="lib-count" id="lc-ls">0</span></button>
-        <div class="fhint">MP3 · OGG · WAV — keep each under 200 KB for Facebook</div>
+      </div>
+      <div>
+        <div class="flabel">Ambient / Background</div>
+        <div class="snd-row" id="sr-amb" onclick="document.getElementById('fi-amb').click()">
+          <input type="file" id="fi-amb" accept="audio/*" style="display:none" onchange="soundLoaded('amb',this)">
+          <span class="snd-ico">🎵</span>
+          <div class="snd-info"><div class="snd-label">Loops through the whole ad</div><div class="snd-fname empty" id="fn-amb">No file — silent</div></div>
+          <button class="snd-x" onclick="clearSound(event,'amb')">×</button>
+        </div>
+        <div class="fsize" id="sz-amb"></div>
+        <button class="lib-btn" onclick="openLib('amb')">📁 Choose from library <span class="lib-count" id="lc-amb">0</span></button>
+        <div class="fhint">MP3 · OGG · WAV — keep each under 200 KB for Facebook. Ambient starts on first tap and loops.</div>
       </div>
     </div>
   </div>
@@ -1159,7 +1170,7 @@ var S = {
   vignette:40,
   introSrc:null, outroSrc:null,
   introDuration:4,
-  csSrc:null,    lsSrc:null,
+  csSrc:null,    lsSrc:null,    ambSrc:null,
   starSteps:[0,1,2,3,4,5],
   totalStars:null,
   cliffhanger:0,
@@ -2230,6 +2241,7 @@ var LIB_INFO={
   outro:{label:'Outro GIF',    icon:'🏁', audio:false},
   cs:   {label:'Click Sound',  icon:'🥁', audio:true },
   ls:   {label:'Level Sound',  icon:'⚡', audio:true },
+  amb:  {label:'Ambient Loop', icon:'🎵', audio:true },
   ctaBtn:{label:'Button Image', icon:'🎯', audio:false}
 };
 
@@ -2356,7 +2368,7 @@ function renderLib(cat){
 }
 
 function applyLibAsset(cat,dataUrl,name,size){
-  if(cat==='cs'||cat==='ls'){
+  if(cat==='cs'||cat==='ls'||cat==='amb'){
     S[cat+'Src']=dataUrl;
     var fn=document.getElementById('fn-'+cat);
     fn.textContent=name;fn.classList.remove('empty');
@@ -2613,7 +2625,7 @@ function syncUIFromState(){
   });
 
   // Sound displays
-  ['cs','ls'].forEach(function(k){
+  ['cs','ls','amb'].forEach(function(k){
     var src=s[k+'Src'];
     var fn=document.getElementById('fn-'+k);
     var sr=document.getElementById('sr-'+k);
@@ -3204,7 +3216,7 @@ function buildAd(network){
     lv2:s.lv2Src||null,
     stage2AtTap:(s.stage2AtTap||s.lv2Src)?Math.max(1,Math.min(s.stage2AtTap||1,totalTapsN-1)):null,
     lv2AtTap:s.lv2Src&&s.lv2AtTap&&s.lv2AtTap<totalTapsN?s.lv2AtTap:null,
-    cs:s.csSrc, ls:s.lsSrc,
+    cs:s.csSrc, ls:s.lsSrc, amb:s.ambSrc,
     sh:s.sh, pt:s.pt, fl:s.fl,
     hasIntro:hasIntro, introDur:s.introDuration,
     hasOutro:hasOutro,
@@ -3255,6 +3267,10 @@ function buildAd(network){
 'var C='+cfg+';\n'+
 'var _csA=C.cs?(function(){var a=new Audio();a.src=C.cs;a.load();return a;})():null;\n'+
 'var _lsA=C.ls?(function(){var a=new Audio();a.src=C.ls;a.load();return a;})():null;\n'+
+'var _ambA=C.amb?(function(){var a=new Audio();a.src=C.amb;a.loop=true;a.volume=0.5;a.load();return a;})():null;\n'+
+'var _ambStarted=false;\n'+
+'function startAmb(){if(!_ambA||paused)return;var p=_ambA.play();if(p&&p.then){p.then(function(){_ambStarted=true;}).catch(function(){});}else{_ambStarted=true;}}\n'+
+'["pointerdown","touchstart","click"].forEach(function(ev){document.addEventListener(ev,startAmb,{once:true,passive:true});});\n'+
 'var tapCount=0,done=false,paused=false,phase=C.hasIntro?"intro":"game";\n'+
 'if(!C.starSteps||C.starSteps.length<2){var _n=C.starSteps&&C.starSteps[0]||5;C.starSteps=[];for(var _i=0;_i<=_n;_i++)C.starSteps.push(_i);}\n'+
 'var totalTaps=C.starSteps.length-1;\n'+
@@ -3444,9 +3460,9 @@ function buildAd(network){
 '}\n'+
 '\n'+
 'cta.addEventListener("click",function(e){e.stopPropagation();'+ctaAction+';});\n'+
-'window._gamePause=function(){paused=true;};\n'+
-'window._gameResume=function(){paused=false;};\n'+
-'document.addEventListener("visibilitychange",function(){if(document.hidden)paused=true;});\n';
+'window._gamePause=function(){paused=true;if(_ambA)_ambA.pause();};\n'+
+'window._gameResume=function(){paused=false;if(_ambA&&_ambStarted){var p=_ambA.play();if(p&&p.catch)p.catch(function(){});}};\n'+
+'document.addEventListener("visibilitychange",function(){if(document.hidden){paused=true;if(_ambA)_ambA.pause();}else{paused=false;if(_ambA&&_ambStarted){var p=_ambA.play();if(p&&p.catch)p.catch(function(){});}}});\n';
 
   // ── INIT WRAPPER ─────────────────────────────────────
   var initScript;
