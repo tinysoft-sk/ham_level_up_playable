@@ -143,9 +143,14 @@ input[type=range]{flex:1;height:4px;accent-color:var(--purple);cursor:pointer}
 .prev-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
 .pbtn{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:6px 13px;font-size:12px;cursor:pointer;transition:border-color .2s,background .2s}
 .pbtn:hover{border-color:var(--purple);background:rgba(124,58,237,.1)}
-#size-pill{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;font-size:11px}
-#size-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .3s}
-#size-txt{color:var(--muted)}
+#size-meter{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 12px;min-width:236px}
+.sm-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sm-title{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.sm-val{font-size:12px;font-weight:700;color:var(--text)}
+.sm-track{position:relative;height:6px;background:var(--surface);border-radius:4px;margin:6px 0 5px}
+.sm-fill{height:100%;width:0;background:var(--ok);border-radius:4px;transition:width .3s,background .3s}
+.sm-mark{position:absolute;top:-2px;bottom:-2px;left:40%;width:2px;background:#fff;opacity:.45;border-radius:1px}
+.sm-status{font-size:10px;color:var(--muted);line-height:1.35}
 
 footer{display:flex;align-items:center;justify-content:space-between;padding:11px 22px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:16px}
 .foot-note{font-size:11px;color:var(--muted);line-height:1.65}
@@ -228,8 +233,9 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 #preset-bar{display:flex;align-items:center;gap:6px;padding:9px 12px;border-bottom:1px solid var(--border);background:var(--surface2)}
 #preset-sel{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:5px 8px;font-size:12px;cursor:pointer;outline:none}
 #preset-sel:focus{border-color:var(--purple)}
-.pbar-btn{background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;font-weight:600;padding:5px 9px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:border-color .15s,color .15s}
+.pbar-btn{display:inline-flex;align-items:center;background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;font-weight:600;padding:5px 9px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:border-color .15s,color .15s}
 .pbar-btn:hover{border-color:var(--gold);color:var(--gold)}
+.pbar-div{width:1px;height:20px;background:var(--border);flex-shrink:0}
 .pbar-save{border-color:rgba(124,58,237,.55);color:var(--text)}
 .pbar-save:hover{border-color:var(--purple)!important;color:#c4aaff!important}
 
@@ -258,6 +264,13 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 .webp-dim{color:var(--muted);font-weight:400}
 .webp-q-lbl{font-size:11px;color:var(--muted);white-space:nowrap}
 #webp-q-row{align-items:center;gap:8px}
+
+/* ── STAGE REVEAL TIMING ── */
+.num-sm{width:52px;padding:5px 8px;font-size:13px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none;-moz-appearance:textfield}
+.timing-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.timing-lbl{font-size:12px;color:var(--text);flex:1}
+.timing-lbl .opt{font-style:normal;color:var(--muted);font-size:10px}
+.timing-of{font-size:12px;color:var(--muted);white-space:nowrap}
 
 /* ── STAR STEPS EDITOR ── */
 .ss-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:6px 0 2px}
@@ -309,11 +322,14 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 <main>
 <aside id="cfg">
 
-  <!-- PRESET BAR -->
+  <!-- PROJECTS BAR — in-browser presets + portable .json file -->
   <div id="preset-bar">
-    <select id="preset-sel" onchange="onPresetSelect()"><option value="">— No preset —</option></select>
-    <button class="pbar-btn pbar-save" onclick="savePreset()" title="Save current state as preset">💾 Save</button>
-    <button class="pbar-btn" onclick="deletePreset()" title="Delete selected preset">🗑</button>
+    <select id="preset-sel" onchange="onPresetSelect()" title="Load a saved in-browser preset"><option value="">— Load preset —</option></select>
+    <button class="pbar-btn pbar-save" onclick="savePreset()" title="Save current settings as a named preset (stored in this browser)">💾 Save</button>
+    <button class="pbar-btn" onclick="deletePreset()" title="Delete the selected preset">🗑</button>
+    <span class="pbar-div"></span>
+    <button class="pbar-btn" onclick="exportPlayable()" title="Download the whole project as a .json file — a portable backup you can load on another device">📤 .json</button>
+    <label class="pbar-btn" title="Load a project from a .json file">📥<input type="file" accept=".json" style="display:none" onchange="importPlayable(this.files[0]);this.value=''"></label>
   </div>
 
   <!-- TAB BAR -->
@@ -408,14 +424,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
         </div>
         <div class="fhint">Fades the edges of the leveled-up image into the background. 0 = sharp edges (off).</div>
       </div>
-      <div style="margin-top:10px">
-        <div class="flabel">Reveals at Tap</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-          <input type="number" id="stage2-tap-inp" min="1" value="1" style="width:52px;padding:5px 8px;font-size:13px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none" oninput="onStage2AtTap(this.value)">
-          <span style="font-size:12px;color:var(--muted)">of <span id="stage2-tap-max">5</span> total taps</span>
-        </div>
-        <div class="fhint">Stage 2 animation fires on this tap.</div>
-      </div>
+      <div class="fhint tip">⏱️ <strong>When</strong> Stage 2 reveals is set in <strong>Game → Stars &amp; Taps → Stage Reveal Timing</strong>.</div>
     </div>
   </div>
 
@@ -451,14 +460,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
         </div>
         <div class="fhint">Fades the edges of the Stage 3 image into the background. 0 = off.</div>
       </div>
-      <div style="margin-top:10px">
-        <div class="flabel">Reveals at Tap</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-          <input type="number" id="lv2-tap-inp" min="1" value="1" style="width:52px;padding:5px 8px;font-size:13px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none" oninput="onLv2AtTap(this.value)">
-          <span style="font-size:12px;color:var(--muted)">of <span id="lv2-tap-max">5</span> total taps</span>
-        </div>
-        <div class="fhint">Stage 3 fires on this tap. Must be after Stage 2's tap. Leave at final tap for the classic flow.</div>
-      </div>
+      <div class="fhint tip">⏱️ <strong>When</strong> Stage 3 reveals is set in <strong>Game → Stars &amp; Taps → Stage Reveal Timing</strong>.</div>
     </div>
   </div>
 
@@ -632,7 +634,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 
   <!-- Clicks & Progress -->
   <div class="sec" id="s-cl">
-    <div class="sec-hd" onclick="toggleSec('s-cl')"><span class="sec-icon">⭐</span><span class="sec-title">Stars &amp; Taps</span><span class="sec-arr">▼</span></div>
+    <div class="sec-hd" onclick="toggleSec('s-cl')"><span class="sec-icon">⭐</span><span class="sec-title">Taps, Stars &amp; Timing</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div class="flabel">Star Steps</div>
       <div class="fhint">Each box = ★ filled at that tap. TAP N sets the fill level — independent of the total shown.</div>
@@ -645,6 +647,22 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
         <span style="font-size:11px;color:var(--muted)">Taps: <strong id="ss-taps">5</strong></span>
       </div>
       <div class="fhint" style="margin-top:4px">Set Total ★ higher than the last tap to leave stars unfilled — combine with Cliffhanger below.</div>
+
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+        <div class="flabel">Stage Reveal Timing</div>
+        <div class="fhint">Which tap fires each transformation. Upload the stage art in the Assets tab.</div>
+        <div class="timing-row">
+          <span class="timing-lbl">✨ Stage 2 reveals at tap</span>
+          <input type="number" id="stage2-tap-inp" min="1" value="1" class="num-sm" oninput="onStage2AtTap(this.value)">
+          <span class="timing-of">of <span id="stage2-tap-max">5</span></span>
+        </div>
+        <div class="timing-row">
+          <span class="timing-lbl">⭐ Stage 3 reveals at tap <em class="opt">(optional)</em></span>
+          <input type="number" id="lv2-tap-inp" min="1" value="1" class="num-sm" oninput="onLv2AtTap(this.value)">
+          <span class="timing-of">of <span id="lv2-tap-max">5</span></span>
+        </div>
+      </div>
+
       <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
         <div class="flabel">Cliffhanger</div>
         <div class="fhint">Skip the final transform — CTA fires while stars are still unfilled, creating urgency.</div>
@@ -981,14 +999,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
       </div>
       <div>
         <div class="flabel">Save / Load Project</div>
-        <div style="display:flex;gap:8px;margin-top:4px">
-          <button class="exp-btn" style="flex:1;font-size:12px;background:linear-gradient(135deg,#1a3a60,#0d2240);color:#88bbff;box-shadow:0 3px 12px rgba(0,0,0,.4)" onclick="exportPlayable()">💾 Save .json</button>
-          <label class="exp-btn" style="flex:1;font-size:12px;background:linear-gradient(135deg,#1a3a60,#0d2240);color:#88bbff;box-shadow:0 3px 12px rgba(0,0,0,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-            📂 Load .json
-            <input type="file" accept=".json" style="display:none" onchange="importPlayable(this.files[0]);this.value=''">
-          </label>
-        </div>
-        <div class="fhint">Saves the full project (all settings + assets) as a .json file. Load it on any device to continue editing.</div>
+        <div class="fhint tip">💡 Use the <strong>📤 .json</strong> / <strong>📥</strong> buttons in the <strong>Projects bar</strong> at the top of this panel to save or load the whole project (all settings + assets) as a portable file.</div>
       </div>
       <div class="tog-row">
         <span class="tog-lbl">⚖️ Responsible play footer <span style="font-size:10px;color:var(--muted)">(Google gambling)</span></span>
@@ -1014,7 +1025,11 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
   <div class="prev-controls">
     <button class="pbtn" onclick="resetPreview()">▶ Replay</button>
-    <div id="size-pill"><div id="size-dot"></div><span id="size-txt">…</span></div>
+    <div id="size-meter" title="Estimated export size. Facebook's limit is 2 MB; Google, Unity &amp; Mintegral allow more.">
+      <div class="sm-head"><span class="sm-title">Export size</span><span id="size-txt" class="sm-val">…</span></div>
+      <div class="sm-track"><div id="sm-fill" class="sm-fill"></div><div class="sm-mark" title="Facebook 2 MB limit"></div></div>
+      <div id="size-status" class="sm-status">…</div>
+    </div>
   </div>
 </section>
 </main>
@@ -1721,13 +1736,20 @@ function resetPreview(){
 }
 function updateSizePill(html){
   var b=new Blob([html]).size;
-  var dot=document.getElementById('size-dot');
+  var mb=b/1024/1024;
   var txt=document.getElementById('size-txt');
-  var kb=(b/1024).toFixed(0),mb=(b/1024/1024).toFixed(2);
-  if(b<1.5*1024*1024){dot.style.background='var(--ok)';txt.textContent=kb+' KB — all networks OK';}
-  else if(b<2*1024*1024){dot.style.background='var(--warn)';txt.textContent=mb+' MB — near Facebook 2 MB limit';}
-  else if(b<5*1024*1024){dot.style.background='var(--warn)';txt.textContent=mb+' MB — over Facebook limit, OK for others';}
-  else{dot.style.background='var(--danger)';txt.textContent=mb+' MB — too large, compress assets';}
+  var fill=document.getElementById('sm-fill');
+  var status=document.getElementById('size-status');
+  if(txt)txt.textContent=(b<1024*1024?(b/1024).toFixed(0)+' KB':mb.toFixed(2)+' MB');
+  // 5 MB full-scale track; Facebook's 2 MB limit is the tick at 40%
+  var pct=Math.min(mb/5,1)*100;
+  var color,msg;
+  if(mb<1.5)      {color='var(--ok)';     msg='✅ Under every network limit';}
+  else if(mb<2)   {color='var(--warn)';   msg='⚠️ Near Facebook 2 MB limit';}
+  else if(mb<5)   {color='var(--warn)';   msg='⚠️ Over Facebook 2 MB — OK for Google / Unity / Mintegral';}
+  else            {color='var(--danger)'; msg='❌ Over 5 MB — too large, compress assets';}
+  if(fill){fill.style.width=pct.toFixed(1)+'%';fill.style.background=color;}
+  if(status){status.textContent=msg;status.style.color=color;}
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2009,7 +2031,7 @@ function loadPresetList(){
         var all=req.result||[];
         var sel=document.getElementById('preset-sel');
         var cur=sel.value;
-        sel.innerHTML='<option value="">— No preset —</option>';
+        sel.innerHTML='<option value="">— Load preset —</option>';
         all.sort(function(a,b){return a.name.localeCompare(b.name);});
         all.forEach(function(p){
           var opt=document.createElement('option');
