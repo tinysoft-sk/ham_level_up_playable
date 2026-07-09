@@ -866,7 +866,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
           <input type="range" id="sl-lv-ty" min="20" max="80" value="50" oninput="onLvTextStyle()">
           <div class="sl-val" id="lv-ty-val">50%</div>
         </div>
-        <div class="fhint">% from top of screen. Move up if overlapping the unit.</div>
+        <div class="fhint">% from top. Or drag the banner in <strong>Edit Layout</strong> mode.</div>
       </div>
 
       <!-- CTA text only -->
@@ -914,12 +914,12 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
       </div><!-- /cta-style-wrap -->
 
       <div>
-        <div class="flabel">Button Position (bottom offset)</div>
+        <div class="flabel">Vertical Position</div>
         <div class="sl-row">
-          <input type="range" id="sl-cta-bot" min="0" max="120" value="20" oninput="onCtaStyle()">
-          <div class="sl-val" id="cta-bot-val">20 px</div>
+          <input type="range" id="sl-cta-bot" min="50" max="98" value="88" oninput="onCtaStyle()">
+          <div class="sl-val" id="cta-bot-val">88%</div>
         </div>
-        <div class="fhint">Distance from the bottom edge of the screen.</div>
+        <div class="fhint">% from top. Or drag the button in <strong>Edit Layout</strong> mode / set X &amp; Y in the Layout tab.</div>
       </div>
 
     </div>
@@ -1060,6 +1060,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
     <button class="orient-btn active" data-orient="portrait" onclick="setOrientation('portrait')">📱 Portrait</button>
     <button class="orient-btn" data-orient="landscape" onclick="setOrientation('landscape')">📺 Landscape</button>
   </div>
+  <button id="layout-toggle" class="orient-btn" style="width:100%;margin-top:6px" onclick="toggleLayoutEdit()">✏️ Edit Layout (drag any element)</button>
   <div id="edit-indicator">✏️ Editing <strong>Portrait</strong> layout &amp; sizes</div>
   <div class="phone-shell portrait" id="phone-shell">
     <div class="phone-screen portrait" id="phone-screen">
@@ -1115,7 +1116,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 // ══════════════════════════════════════════════════════════
 function makeOrientState(unitSz, lvSz, logoSz){
   return {
-    pos:{ logo:{x:50,y:9}, stars:{x:50,y:20}, unit:{x:50,y:52}, hint:{x:50,y:83} },
+    pos:{ logo:{x:50,y:9}, stars:{x:50,y:20}, unit:{x:50,y:52}, hint:{x:50,y:83}, lvtext:{x:50,y:50}, cta:{x:50,y:88} },
     unitSize: unitSz,
     lvSize:   lvSz,
     lv2Size:  lvSz,
@@ -1243,15 +1244,23 @@ window.addEventListener('message', function(e){
 // ══════════════════════════════════════════════════════════
 //  POSITION FIELDS
 // ══════════════════════════════════════════════════════════
-var POS_LABELS={logo:'Logo',stars:'Stars',unit:'Unit',hint:'Hint'};
-var POS_DEFAULTS_P={logo:{x:50,y:9},stars:{x:50,y:20},unit:{x:50,y:52},hint:{x:50,y:83}};
-var POS_DEFAULTS_L={logo:{x:50,y:9},stars:{x:50,y:20},unit:{x:50,y:52},hint:{x:50,y:83}};
+var POS_KEYS=['logo','stars','unit','hint','lvtext','cta'];
+var POS_LABELS={logo:'Logo',stars:'Stars',unit:'Unit',hint:'Hint',lvtext:'Level Banner',cta:'CTA Button'};
+var POS_DEFAULTS_P={logo:{x:50,y:9},stars:{x:50,y:20},unit:{x:50,y:52},hint:{x:50,y:83},lvtext:{x:50,y:50},cta:{x:50,y:88}};
+var POS_DEFAULTS_L={logo:{x:50,y:9},stars:{x:50,y:20},unit:{x:50,y:52},hint:{x:50,y:83},lvtext:{x:50,y:50},cta:{x:50,y:88}};
+
+// ensure a per-orientation state has every position key (migrates old saves)
+function ensurePosKeys(o){
+  if(!o||!o.pos)return;
+  POS_KEYS.forEach(function(k){ if(!o.pos[k]) o.pos[k]={x:POS_DEFAULTS_P[k].x,y:POS_DEFAULTS_P[k].y}; });
+}
 
 function buildPosFields(){
   var container=document.getElementById('pos-fields');
   container.innerHTML='';
+  ensurePosKeys(curO());
   var pos=curO().pos;
-  ['logo','stars','unit','hint'].forEach(function(k){
+  POS_KEYS.forEach(function(k){
     var row=document.createElement('div');
     row.style.cssText='display:grid;grid-template-columns:52px 1fr 1fr;gap:6px;align-items:center';
     row.innerHTML=
@@ -1286,12 +1295,9 @@ function updatePosField(k){
 function resetPositions(){
   var o=previewOrientation;
   var def=o==='portrait'?POS_DEFAULTS_P:POS_DEFAULTS_L;
-  S.perOrient[o].pos={
-    logo:  {x:def.logo.x,  y:def.logo.y},
-    stars: {x:def.stars.x, y:def.stars.y},
-    unit:  {x:def.unit.x,  y:def.unit.y},
-    hint:  {x:def.hint.x,  y:def.hint.y}
-  };
+  var np={};
+  POS_KEYS.forEach(function(k){ np[k]={x:def[k].x,y:def[k].y}; });
+  S.perOrient[o].pos=np;
   buildPosFields();
   refreshPreview();
 }
@@ -1299,12 +1305,10 @@ function resetPositions(){
 function copyLayout(from, to){
   var src=S.perOrient[from];
   var dst=S.perOrient[to];
-  dst.pos={
-    logo:  {x:src.pos.logo.x,  y:src.pos.logo.y},
-    stars: {x:src.pos.stars.x, y:src.pos.stars.y},
-    unit:  {x:src.pos.unit.x,  y:src.pos.unit.y},
-    hint:  {x:src.pos.hint.x,  y:src.pos.hint.y}
-  };
+  ensurePosKeys(src);
+  var np={};
+  POS_KEYS.forEach(function(k){ np[k]={x:src.pos[k].x,y:src.pos[k].y}; });
+  dst.pos=np;
   dst.unitSize=src.unitSize; dst.lvSize=src.lvSize; dst.lv2Size=src.lv2Size||src.lvSize; dst.logoSize=src.logoSize;
   dst.introSize=src.introSize; dst.outroSize=src.outroSize;
   // if we copied TO the current orientation, refresh sliders
@@ -1334,6 +1338,11 @@ function syncSlidersToOrientation(){
   document.getElementById('intro-sz-val').textContent=o.introSize+'%';
   document.getElementById('sl-outro-sz').value=o.outroSize;
   document.getElementById('outro-sz-val').textContent=o.outroSize+'%';
+
+  // per-orientation vertical-position sliders (banner + CTA)
+  ensurePosKeys(o);
+  var _lty=document.getElementById('sl-lv-ty');if(_lty){_lty.value=Math.round(o.pos.lvtext.y);document.getElementById('lv-ty-val').textContent=Math.round(o.pos.lvtext.y)+'%';}
+  var _cb=document.getElementById('sl-cta-bot');if(_cb){_cb.value=Math.round(o.pos.cta.y);document.getElementById('cta-bot-val').textContent=Math.round(o.pos.cta.y)+'%';}
 
   // orientation badges on each slider label
   ['unit-sz-badge','lv-sz-badge','logo-sz-badge','intro-sz-badge','outro-sz-badge'].forEach(function(id){
@@ -1856,8 +1865,10 @@ function onLvTextStyle(){
   S.lvTextColor=document.getElementById('lv-color').value;
   S.lvTextSize=parseInt(document.getElementById('sl-lv-tsz').value);
   document.getElementById('lv-tsz-val').textContent=S.lvTextSize+'%';
-  S.lvTextY=parseInt(document.getElementById('sl-lv-ty').value);
-  document.getElementById('lv-ty-val').textContent=S.lvTextY+'%';
+  var _ly=parseInt(document.getElementById('sl-lv-ty').value);
+  curO().pos.lvtext.y=_ly; S.lvTextY=_ly;
+  document.getElementById('lv-ty-val').textContent=_ly+'%';
+  updatePosField('lvtext');
   refreshPreview();
 }
 function onCtaScheme(id){
@@ -1881,8 +1892,10 @@ function onLvBlend(v){
 function onCtaStyle(){
   S.ctaSize=parseInt(document.getElementById('sl-cta-sz').value);
   document.getElementById('cta-sz-val').textContent=S.ctaSize+'%';
-  S.ctaBottom=parseInt(document.getElementById('sl-cta-bot').value);
-  document.getElementById('cta-bot-val').textContent=S.ctaBottom+' px';
+  var _cy=parseInt(document.getElementById('sl-cta-bot').value);
+  curO().pos.cta.y=_cy;
+  document.getElementById('cta-bot-val').textContent=_cy+'%';
+  updatePosField('cta');
   refreshPreview();
 }
 
@@ -1973,18 +1986,27 @@ function setOrientation(o){
 //  PREVIEW
 // ══════════════════════════════════════════════════════════
 var _dbt=null;
+var _layoutEdit=false;
 function refreshPreview(){
   clearTimeout(_dbt);
   _dbt=setTimeout(function(){
-    var html=buildAd('preview');
+    var html=buildAd(_layoutEdit?'layout':'preview');
     document.getElementById('pframe').srcdoc=html;
-    updateSizePill(html);
+    updateSizePill(_layoutEdit?buildAd('preview'):html);
   },160);
 }
 function resetPreview(){
-  var html=buildAd('preview');
+  var html=buildAd(_layoutEdit?'layout':'preview');
   var f=document.getElementById('pframe');
   f.srcdoc='';setTimeout(function(){f.srcdoc=html;},60);
+}
+function toggleLayoutEdit(){
+  _layoutEdit=!_layoutEdit;
+  var b=document.getElementById('layout-toggle');
+  if(b){ b.classList.toggle('active',_layoutEdit); b.textContent=_layoutEdit?'✏️ Editing Layout — click to exit':'✏️ Edit Layout (drag any element)'; }
+  var ind=document.getElementById('edit-indicator');
+  if(ind) ind.style.display=_layoutEdit?'none':'';
+  refreshPreview();
 }
 function updateSizePill(html){
   var b=new Blob([html]).size;
@@ -2353,8 +2375,19 @@ function applyPreset(data){
     S.starSteps=[];for(var _i=0;_i<=S.clicks;_i++)S.starSteps.push(_i);
   }
   if(!Array.isArray(S.starSteps)||S.starSteps.length<2)S.starSteps=[0,1,2,3,4,5];
+  migratePositions();
   syncUIFromState();
   refreshPreview();
+}
+
+// fill in new position keys (lvtext, cta) on older saves, seeding from the
+// legacy lvTextY / ctaBottom values where possible
+function migratePositions(){
+  ['portrait','landscape'].forEach(function(o){
+    var st=S.perOrient&&S.perOrient[o]; if(!st)return;
+    ensurePosKeys(st);
+    if(st.pos.lvtext.y===50 && typeof S.lvTextY==='number') st.pos.lvtext.y=S.lvTextY;
+  });
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2399,9 +2432,8 @@ function syncUIFromState(){
   document.getElementById('vig-preview').style.opacity=s.vignette>0?1:0.3;
   sl('sl-hint-sz',s.hintTextSize,'hint-sz-val',function(v){return v+'%';});
   sl('sl-lv-tsz',s.lvTextSize,'lv-tsz-val',function(v){return v+'%';});
-  sl('sl-lv-ty',s.lvTextY,'lv-ty-val',function(v){return v+'%';});
   sl('sl-cta-sz',s.ctaSize,'cta-sz-val',function(v){return v+'%';});
-  sl('sl-cta-bot',s.ctaBottom,'cta-bot-val',function(v){return v+' px';});
+  // sl-lv-ty & sl-cta-bot are per-orientation now — set by syncSlidersToOrientation
   sl('sl-ptc',s.ptCount,'ptc-val');
   sl('sl-pts',s.ptSpread,'pts-val',function(v){return v+'%';});
   sl('sl-fli',s.flashIntensity,'fli-val',function(v){return v+'%';});
@@ -2678,8 +2710,9 @@ var CTA_SWATCH_DEFS=[
 ];
 
 // drag script — injected only into preview iframe
-var DRAG_JS=
-'(function(){\n'+
+// mkDrag: shared drag function (string). Starts from the element's current
+// on-screen centre so CSS-positioned elements don't jump on first drag.
+var MKDRAG_FN=
 'function mkDrag(elId,posId){\n'+
 '  var el=document.getElementById(elId);if(!el)return;\n'+
 '  el.style.cursor="grab";\n'+
@@ -2688,65 +2721,82 @@ var DRAG_JS=
 '  function go(e){\n'+
 '    if(e.type==="touchstart")e.preventDefault();\n'+
 '    e.stopPropagation();\n'+
-'    var g=document.getElementById("g");\n'+
-'    var gR=g.getBoundingClientRect();\n'+
+'    var g=document.getElementById("g");var gR=g.getBoundingClientRect();\n'+
+'    var er=el.getBoundingClientRect();\n'+
 '    var pt=e.touches?e.touches[0]:e;\n'+
 '    var sx=pt.clientX,sy=pt.clientY;\n'+
-'    var sl=parseFloat(el.style.left)||50;\n'+
-'    var sto=parseFloat(el.style.top)||50;\n'+
-'    var moved=false;\n'+
-'    el.style.cursor="grabbing";\n'+
+'    var sl=((er.left+er.width/2)-gR.left)/gR.width*100;\n'+
+'    var sto=((er.top+er.height/2)-gR.top)/gR.height*100;\n'+
+'    var moved=false;el.style.cursor="grabbing";\n'+
 '    function mv(e2){\n'+
 '      if(e2.cancelable)e2.preventDefault();\n'+
 '      var p=e2.touches?e2.touches[0]:e2;\n'+
-'      var dx=(p.clientX-sx)/gR.width*100;\n'+
-'      var dy=(p.clientY-sy)/gR.height*100;\n'+
+'      var dx=(p.clientX-sx)/gR.width*100;var dy=(p.clientY-sy)/gR.height*100;\n'+
 '      if(Math.abs(dx)>1||Math.abs(dy)>1)moved=true;\n'+
-'      el.style.left=Math.max(5,Math.min(95,sl+dx))+"%";\n'+
-'      el.style.top=Math.max(5,Math.min(95,sto+dy))+"%";\n'+
+'      el.style.left=Math.max(2,Math.min(98,sl+dx))+"%";\n'+
+'      el.style.top=Math.max(2,Math.min(98,sto+dy))+"%";\n'+
 '    }\n'+
 '    function up(){\n'+
 '      el.style.cursor="grab";\n'+
 '      if(moved){\n'+
-'        window.parent.postMessage({type:"posUpdate",id:posId,\n'+
-'          x:parseFloat(el.style.left),y:parseFloat(el.style.top)},"*");\n'+
+'        window.parent.postMessage({type:"posUpdate",id:posId,x:parseFloat(el.style.left),y:parseFloat(el.style.top)},"*");\n'+
 '        var once=function(e3){e3.stopPropagation();document.removeEventListener("click",once,true);};\n'+
 '        document.addEventListener("click",once,true);\n'+
 '      }\n'+
-'      document.removeEventListener("mousemove",mv);\n'+
-'      document.removeEventListener("mouseup",up);\n'+
-'      document.removeEventListener("touchmove",mv);\n'+
-'      document.removeEventListener("touchend",up);\n'+
+'      document.removeEventListener("mousemove",mv);document.removeEventListener("mouseup",up);\n'+
+'      document.removeEventListener("touchmove",mv);document.removeEventListener("touchend",up);\n'+
 '    }\n'+
-'    document.addEventListener("mousemove",mv,{passive:false});\n'+
-'    document.addEventListener("mouseup",up);\n'+
-'    document.addEventListener("touchmove",mv,{passive:false});\n'+
-'    document.addEventListener("touchend",up);\n'+
+'    document.addEventListener("mousemove",mv,{passive:false});document.addEventListener("mouseup",up);\n'+
+'    document.addEventListener("touchmove",mv,{passive:false});document.addEventListener("touchend",up);\n'+
 '  }\n'+
-'}\n'+
-'window.addEventListener("load",function(){\n'+
-'  ["logo","stars","uw","hint"].forEach(function(id){\n'+
-'    var el=document.getElementById(id);if(!el)return;\n'+
-'    el.style.outline="1.5px dashed rgba(255,255,255,0.3)";\n'+
-'    el.style.borderRadius="4px";\n'+
-'  });\n'+
-'  mkDrag("logo","logo");mkDrag("stars","stars");mkDrag("uw","unit");mkDrag("hint","hint");\n'+
-'  // Stats card — convert from bottom-based to top/left so mkDrag works with it\n'+
+'}\n';
+
+// stats-card drag prep (string) — converts bottom-anchored card to top/left
+var SC_DRAGPREP=
 '  var scD=document.getElementById("sc");\n'+
 '  if(scD){\n'+
 '    var r=scD.getBoundingClientRect();\n'+
-'    var cx=(r.left+r.width/2)/window.innerWidth*100;\n'+
-'    var cy=(r.top+r.height/2)/window.innerHeight*100;\n'+
 '    scD.style.bottom="auto";\n'+
-'    scD.style.left=cx.toFixed(1)+"%";\n'+
-'    scD.style.top=cy.toFixed(1)+"%";\n'+
+'    scD.style.left=((r.left+r.width/2)/window.innerWidth*100).toFixed(1)+"%";\n'+
+'    scD.style.top=((r.top+r.height/2)/window.innerHeight*100).toFixed(1)+"%";\n'+
 '    var scl=parseFloat(scD.dataset.scale||"1");\n'+
 '    scD.style.transform="translate(-50%,-50%) scale("+scl+")";\n'+
 '    scD.style.transformOrigin="50% 50%";\n'+
-'    scD.style.outline="1.5px dashed rgba(255,200,50,0.5)";\n'+
-'    scD.style.borderRadius="6px";\n'+
+'    scD.style.pointerEvents="auto";\n'+
+'    scD.style.outline="1.5px dashed rgba(255,200,50,0.5)";scD.style.borderRadius="6px";\n'+
 '    mkDrag("sc","sc");\n'+
-'  }\n'+
+'  }\n';
+
+// Live-preview drag — only the always-visible game elements
+var DRAG_JS=
+'(function(){\n'+MKDRAG_FN+
+'window.addEventListener("load",function(){\n'+
+'  ["logo","stars","uw","hint"].forEach(function(id){\n'+
+'    var el=document.getElementById(id);if(!el)return;\n'+
+'    el.style.outline="1.5px dashed rgba(255,255,255,0.3)";el.style.borderRadius="4px";\n'+
+'  });\n'+
+'  mkDrag("logo","logo");mkDrag("stars","stars");mkDrag("uw","unit");mkDrag("hint","hint");\n'+
+SC_DRAGPREP+
+'});\n'+
+'})();\n';
+
+// Edit-Layout drag — freezes the ad in its final state with EVERY element
+// visible, interactive and draggable (logo, stars, unit, hint, banner, CTA, stats).
+var LAYOUT_JS=
+'(function(){\n'+MKDRAG_FN+
+'window.addEventListener("load",function(){\n'+
+'  var lv=document.getElementById("lv");if(lv){lv.style.transition="none";lv.style.opacity="1";lv.style.transform="translate(-50%,-50%) scale(1)";}\n'+
+'  var cta=document.getElementById("cta");if(cta){cta.classList.add("vis");cta.style.transition="none";cta.style.opacity="1";}\n'+
+'  var sc=document.getElementById("sc");if(sc){sc.classList.add("vis");sc.classList.add("sc-upgraded");sc.style.transition="none";sc.style.opacity="1";}\n'+
+'  var fg=document.getElementById("fg");if(fg)fg.style.display="none";\n'+
+'  var hint=document.getElementById("hint");if(hint)hint.style.opacity="1";\n'+
+'  ["intro-ov","outro-ov"].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display="none";});\n'+
+'  [["logo","logo"],["stars","stars"],["uw","unit"],["hint","hint"],["lv","lvtext"],["cta","cta"]].forEach(function(d){\n'+
+'    var el=document.getElementById(d[0]);if(!el)return;\n'+
+'    el.style.pointerEvents="auto";el.style.outline="1.5px dashed rgba(120,190,255,0.7)";el.style.borderRadius="4px";\n'+
+'    mkDrag(d[0],d[1]);\n'+
+'  });\n'+
+SC_DRAGPREP+
 '});\n'+
 '})();\n';
 
@@ -2754,6 +2804,8 @@ function buildAd(network){
   var s=S;
   var pO=s.perOrient.portrait;   // portrait layout
   var lO=s.perOrient.landscape;  // landscape layout
+  ensurePosKeys(pO); ensurePosKeys(lO);
+  var layoutEdit=(network==='layout'); // static all-elements-visible editing mode
 
   // ── Placeholder SVGs ──────────────────────────────────
   var defUnit=svgUrl(
@@ -2813,13 +2865,17 @@ function buildAd(network){
   var statsHtml='', statsCss='';
   if(s.statsEnabled&&s.statsRows&&s.statsRows.length>0){
     var ctaBtnH=s.ctaBtnSrc?60:Math.round(ctaPadPx*2+ctaFontPx*1.5);
-    var scAutoBottom=s.ctaBottom+ctaBtnH+8;
-    var scBottomPx=(s.statsAuto!==false)?scAutoBottom:(s.statsManualBottom||80);
     var scScaleF=((s.statsScale||100)/100).toFixed(3);
-    // Use dragged position only when auto is OFF and a drag position is stored
-    var scPosCss=(s.statsAuto===false&&s.statsX!==null&&s.statsX!==undefined&&s.statsY!==null&&s.statsY!==undefined)
-      ?'left:'+parseFloat(s.statsX).toFixed(1)+'%;top:'+parseFloat(s.statsY).toFixed(1)+'%;transform:translate(-50%,-50%) scale('+scScaleF+')'
-      :'bottom:'+scBottomPx+'px;left:50%;transform:translateX(-50%) scale('+scScaleF+');transform-origin:50% 100%';
+    var scHasDrag=(s.statsAuto===false&&s.statsX!==null&&s.statsX!==undefined&&s.statsY!==null&&s.statsY!==undefined);
+    var scPosCss;
+    if(scHasDrag){
+      scPosCss='left:'+parseFloat(s.statsX).toFixed(1)+'%;top:'+parseFloat(s.statsY).toFixed(1)+'%;transform:translate(-50%,-50%) scale('+scScaleF+')';
+    } else if(s.statsAuto!==false){
+      // auto: sit just above the (now draggable) CTA
+      scPosCss='bottom:calc('+(100-pO.pos.cta.y).toFixed(1)+'% + '+(Math.round(ctaBtnH/2)+10)+'px);left:'+pO.pos.cta.x+'%;transform:translate(-50%,0) scale('+scScaleF+');transform-origin:50% 100%';
+    } else {
+      scPosCss='bottom:'+(s.statsManualBottom||80)+'px;left:50%;transform:translateX(-50%) scale('+scScaleF+');transform-origin:50% 100%';
+    }
     var scAlwaysCss=s.statsMode==='always'
       ? '#sc.sc-always{opacity:1;pointer-events:auto}\n'+
         '#sc.sc-always .sc-bonus{opacity:0;max-width:0;min-width:0!important;overflow:hidden;padding-left:0;transition:opacity .6s .1s,max-width .4s .1s,padding-left .4s .1s}\n'+
@@ -3312,6 +3368,8 @@ gameInner+
 'document.addEventListener("visibilitychange",function(){if(document.hidden&&window._gamePause)window._gamePause();});\n';
   } else if(network==='preview'){
     initScript='window.addEventListener("load",function(){(function(){\n'+gameInner+'\n})();});\n'+DRAG_JS;
+  } else if(network==='layout'){
+    initScript=LAYOUT_JS; // static edit mode: no game logic, drag everything
   } else {
     initScript='window.addEventListener("load",function(){(function(){\n'+gameInner+'\n})();});\n';
   }
@@ -3394,19 +3452,21 @@ logoCss+
 '.pt{position:fixed;border-radius:50%;pointer-events:none;z-index:5}\n'+
 
 // ── LEVEL UP TEXT (z:11) ───────────────────────────────
-'#lv{position:fixed;top:'+s.lvTextY+'%;left:50%;transform:translate(-50%,-50%) scale(.3);font-size:'+Math.round(38*s.lvTextSize/100)+'px;font-weight:900;color:'+s.lvTextColor+';text-shadow:0 2px 12px rgba(0,0,0,.95),0 4px 2px rgba(0,0,0,.5),2px 2px 0 rgba(0,0,0,.3),-2px 2px 0 rgba(0,0,0,.3);opacity:0;pointer-events:none;z-index:11;text-align:center;letter-spacing:3px;white-space:nowrap}\n'+
+'#lv{position:fixed;left:'+pO.pos.lvtext.x+'%;top:'+pO.pos.lvtext.y+'%;transform:translate(-50%,-50%) scale(.3);font-size:'+Math.round(38*s.lvTextSize/100)+'px;font-weight:900;color:'+s.lvTextColor+';text-shadow:0 2px 12px rgba(0,0,0,.95),0 4px 2px rgba(0,0,0,.5),2px 2px 0 rgba(0,0,0,.3),-2px 2px 0 rgba(0,0,0,.3);opacity:0;pointer-events:none;z-index:11;text-align:center;letter-spacing:3px;white-space:nowrap}\n'+
+'@media(orientation:landscape){#lv{left:'+lO.pos.lvtext.x+'%;top:'+lO.pos.lvtext.y+'%}}\n'+
 '.lv-show{animation:lvA 1.1s cubic-bezier(.3,1.55,.5,1) forwards}\n'+
 '@keyframes lvA{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}35%{opacity:1;transform:translate(-50%,-50%) scale(1.18)}60%{transform:translate(-50%,-50%) scale(.94)}80%,100%{opacity:1;transform:translate(-50%,-60%) scale(1)}}\n'+
 
-// ── CTA (z:12) ─────────────────────────────────────────
+// ── CTA (z:12) — draggable via pos.cta ─────────────────
 (s.ctaBtnSrc
-  ?'#cta{position:fixed;bottom:'+s.ctaBottom+'px;left:50%;transform:translateX(-50%) translateY(22px);max-width:min(85vw,'+ctaMaxW+'px);background:none;border:none;box-shadow:none;padding:0;border-radius:0;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'+
+  ?'#cta{position:fixed;left:'+pO.pos.cta.x+'%;top:'+pO.pos.cta.y+'%;transform:translate(-50%,-50%) translateY(22px);max-width:min(85vw,'+ctaMaxW+'px);background:none;border:none;box-shadow:none;padding:0;border-radius:0;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'+
    '#cta img{max-width:100%;display:block;filter:drop-shadow(0 4px 18px rgba(0,0,0,.55))}\n'
-  :'#cta{position:fixed;bottom:'+s.ctaBottom+'px;left:50%;transform:translateX(-50%) translateY(22px);width:min(85vw,'+ctaMaxW+'px);background:'+ctaBg+';color:'+ctaTextCol+';font-size:'+ctaFontPx+'px;font-weight:900;text-align:center;letter-spacing:2px;text-transform:uppercase;padding:'+ctaPadPx+'px 0;border-radius:'+ctaRadius+';border:none;cursor:pointer;box-shadow:'+ctaBoxShadow+';opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'
+  :'#cta{position:fixed;left:'+pO.pos.cta.x+'%;top:'+pO.pos.cta.y+'%;transform:translate(-50%,-50%) translateY(22px);width:min(85vw,'+ctaMaxW+'px);background:'+ctaBg+';color:'+ctaTextCol+';font-size:'+ctaFontPx+'px;font-weight:900;text-align:center;letter-spacing:2px;text-transform:uppercase;padding:'+ctaPadPx+'px 0;border-radius:'+ctaRadius+';border:none;cursor:pointer;box-shadow:'+ctaBoxShadow+';opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'
 )+
-'#cta.vis{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}\n'+
+'@media(orientation:landscape){#cta{left:'+lO.pos.cta.x+'%;top:'+lO.pos.cta.y+'%}}\n'+
+'#cta.vis{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) translateY(0)}\n'+
 '#cta.pulse{animation:ctaP .9s ease-in-out infinite}\n'+
-'@keyframes ctaP{0%,100%{transform:translateX(-50%) translateY(0) scale(1)}50%{transform:translateX(-50%) translateY(-5px) scale(1.04)}}\n'+
+'@keyframes ctaP{0%,100%{transform:translate(-50%,-50%) translateY(0) scale(1)}50%{transform:translate(-50%,-50%) translateY(-5px) scale(1.04)}}\n'+
 
 // ── INTRO / OUTRO OVERLAYS ─────────────────────────────
 '#intro-ov,#outro-ov{position:fixed;inset:0;opacity:0;pointer-events:none;background:#000}\n'+
