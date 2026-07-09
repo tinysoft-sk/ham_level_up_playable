@@ -267,6 +267,8 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 #webp-bar>summary::after{content:'▼';margin-left:auto;font-size:9px;color:var(--muted);transition:transform .2s}
 #webp-bar[open]>summary::after{transform:rotate(180deg)}
 .webp-body{display:flex;flex-direction:column;gap:7px;padding:0 11px 10px}
+.webp-sep{height:1px;background:var(--border);margin:3px 0}
+#vid-opts{display:flex;flex-direction:column;gap:6px}
 .webp-toggle-lbl{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer}
 .webp-toggle-lbl input{cursor:pointer}
 .webp-dim{color:var(--muted);font-weight:400}
@@ -357,18 +359,30 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 
   <!-- UPLOAD SETTINGS (WebP) DISCLOSURE — Assets tab only -->
   <details id="webp-bar">
-    <summary>⚙️ Upload settings <span class="webp-dim">— auto WebP compression</span></summary>
+    <summary>⚙️ Upload settings <span class="webp-dim">— image &amp; video compression</span></summary>
     <div class="webp-body">
       <label class="webp-toggle-lbl">
         <input type="checkbox" id="webp-toggle" checked onchange="onWebpToggle(this)">
-        <span>🗜️ Auto-compress images → WebP <span class="webp-dim">(PNG / JPG)</span></span>
+        <span>🗜️ Compress images → WebP <span class="webp-dim">(PNG / JPG)</span></span>
       </label>
       <div id="webp-q-row" class="sl-row">
         <span class="webp-q-lbl">Quality</span>
         <input type="range" id="webp-q" min="60" max="100" value="85" oninput="onWebpQuality(this.value)">
         <div class="sl-val" id="webp-q-val">85%</div>
       </div>
-      <div class="fhint" style="margin-top:0">Static PNG/JPG uploads are re-encoded to WebP in-browser. Animated GIF/WebP and video pass through untouched.</div>
+      <div class="fhint" style="margin-top:0">Static PNG/JPG re-encoded to WebP. Animated GIF/WebP pass through untouched.</div>
+
+      <div class="webp-sep"></div>
+      <label class="webp-toggle-lbl">
+        <input type="checkbox" id="vid-toggle" checked onchange="onVidToggle(this)">
+        <span>🎞️ Compress video → APNG <span class="webp-dim">(keeps transparency)</span></span>
+      </label>
+      <div id="vid-opts">
+        <div class="sl-row"><span class="webp-q-lbl">Max width</span><input type="range" id="vid-w" min="128" max="1024" step="32" value="512" oninput="onVidOpt()"><div class="sl-val" id="vid-w-val">512</div></div>
+        <div class="sl-row"><span class="webp-q-lbl">FPS</span><input type="range" id="vid-fps" min="8" max="30" value="15" oninput="onVidOpt()"><div class="sl-val" id="vid-fps-val">15</div></div>
+        <div class="sl-row"><span class="webp-q-lbl">Colors</span><input type="range" id="vid-colors" min="0" max="256" step="16" value="256" oninput="onVidOpt()"><div class="sl-val" id="vid-colors-val">256</div></div>
+      </div>
+      <div class="fhint" style="margin-top:0">Transparent WebM/MP4 → frames → APNG animation. Lower width / FPS / colors = smaller. Colors 0 = lossless. Opaque videos are left as-is.</div>
     </div>
   </details>
 
@@ -1088,6 +1102,10 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 </div>
 
+<!-- Local vendor libs for transparent-video → APNG compression -->
+<script src="vendor/pako.min.js"></script>
+<script src="vendor/UPNG.js"></script>
+
 <script>
 // ══════════════════════════════════════════════════════════
 //  STATE
@@ -1362,6 +1380,97 @@ function onWebpToggle(cb){
 }
 function onWebpQuality(v){ webpQuality=v/100; document.getElementById('webp-q-val').textContent=v+'%'; }
 
+// ── Video → transparent APNG compression (editor-only settings) ──
+var vidEnabled=true, vidMaxW=512, vidFps=15, vidColors=256;
+var VID_MAX_FRAMES=90; // safety cap on total frames
+function onVidToggle(cb){ vidEnabled=cb.checked; var o=document.getElementById('vid-opts'); if(o)o.style.display=vidEnabled?'':'none'; }
+function onVidOpt(){
+  vidMaxW=+document.getElementById('vid-w').value;
+  vidFps=+document.getElementById('vid-fps').value;
+  vidColors=+document.getElementById('vid-colors').value;
+  document.getElementById('vid-w-val').textContent=vidMaxW;
+  document.getElementById('vid-fps-val').textContent=vidFps;
+  document.getElementById('vid-colors-val').textContent=vidColors===0?'Lossless':vidColors;
+}
+function fileToDataUrl(f){ return new Promise(function(res){ var r=new FileReader(); r.onload=function(e){res(e.target.result);}; r.readAsDataURL(f); }); }
+function bufToDataUrl(buf,mime){ return new Promise(function(res){ var r=new FileReader(); r.onload=function(e){res(e.target.result);}; r.readAsDataURL(new Blob([buf],{type:mime})); }); }
+// show a transient status string on an upload tile's size line
+function tileStatus(k,msg){
+  var el=document.getElementById('sz-'+k); if(!el)return;
+  el.className='fsize shown'; el.style.color='var(--gold)'; el.textContent='⏳ '+msg;
+}
+
+// WebM/MP4 duration can report Infinity until seeked — force it to resolve
+function realDuration(v){
+  return new Promise(function(res){
+    if(v.duration!==Infinity && !isNaN(v.duration) && v.duration>0){ res(v.duration); return; }
+    var done=false;
+    v.addEventListener('durationchange',function h(){ if(v.duration!==Infinity && !isNaN(v.duration)){ done=true; v.removeEventListener('durationchange',h); v.currentTime=0; res(v.duration); } });
+    v.currentTime=1e7;
+    setTimeout(function(){ if(!done) res(v.duration||0); },2000);
+  });
+}
+
+// decode a video File into scaled RGBA frames (keeps alpha); onProgress(0..1)
+function extractFrames(f,onProgress){
+  return new Promise(function(resolve,reject){
+    var url=URL.createObjectURL(f);
+    var v=document.createElement('video');
+    v.muted=true; v.playsInline=true; v.preload='auto'; v.crossOrigin='anonymous'; v.src=url;
+    v.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('video load failed')); };
+    v.onloadedmetadata=function(){
+      realDuration(v).then(function(dur){
+        if(!dur||!isFinite(dur)){ URL.revokeObjectURL(url); reject(new Error('bad duration')); return; }
+        var vw=v.videoWidth, vh=v.videoHeight;
+        var scale=Math.min(1, vidMaxW/vw);
+        var ow=Math.max(1,Math.round(vw*scale)), oh=Math.max(1,Math.round(vh*scale));
+        var count=Math.max(1, Math.min(VID_MAX_FRAMES, Math.round(dur*vidFps)));
+        var interval=dur/count;
+        var cv=document.createElement('canvas'); cv.width=ow; cv.height=oh;
+        var g=cv.getContext('2d',{alpha:true});
+        var frames=[], i=0, hadAlpha=false;
+        v.onseeked=function(){
+          g.clearRect(0,0,ow,oh); g.drawImage(v,0,0,ow,oh);
+          var id=g.getImageData(0,0,ow,oh), d=id.data;
+          if(!hadAlpha){ for(var p=3;p<d.length;p+=148){ if(d[p]<250){ hadAlpha=true; break; } } }
+          frames.push(d.buffer);
+          i++; if(onProgress)onProgress(i/count);
+          if(i>=count){ URL.revokeObjectURL(url); resolve({frames:frames,w:ow,h:oh,count:count,hadAlpha:hadAlpha}); }
+          else { v.currentTime=Math.min(dur-1e-3, i*interval); }
+        };
+        v.currentTime=0;
+      });
+    };
+  });
+}
+
+function compressVideo(k,f){
+  // no encoder or disabled → keep the original video untouched
+  if(!vidEnabled || typeof UPNG==='undefined' || typeof pako==='undefined'){
+    fileToDataUrl(f).then(function(u){ applyAsset(k,{src:u,size:f.size,name:f.name,note:''}); });
+    return;
+  }
+  tileStatus(k,'Reading video…');
+  extractFrames(f,function(p){ tileStatus(k,'Extracting frames… '+Math.round(p*100)+'%'); }).then(function(ex){
+    if(!ex.hadAlpha){ // opaque — APNG would bloat; keep as video
+      return fileToDataUrl(f).then(function(u){ applyAsset(k,{src:u,size:f.size,name:f.name,note:'⚠️ no transparency — kept as video'}); });
+    }
+    tileStatus(k,'Encoding APNG…');
+    var delays=[]; for(var j=0;j<ex.count;j++) delays.push(Math.round(1000/vidFps));
+    // defer so the status paint lands before the (sync) encode blocks
+    return new Promise(function(res){ setTimeout(function(){
+      var buf=UPNG.encode(ex.frames, ex.w, ex.h, vidColors, delays);
+      bufToDataUrl(buf,'image/png').then(function(u){
+        var note='✓ '+ex.count+'f APNG'+(f.size?' −'+Math.round((1-buf.byteLength/f.size)*100)+'%':'');
+        applyAsset(k,{src:u,size:buf.byteLength,name:f.name.replace(/\.\w+$/,'')+'.png',note:note});
+        res();
+      });
+    },30); });
+  }).catch(function(err){
+    fileToDataUrl(f).then(function(u){ applyAsset(k,{src:u,size:f.size,name:f.name,note:'⚠️ compress failed — kept original'}); });
+  });
+}
+
 // bytes encoded in a base64 data URL
 function dataUrlBytes(u){
   var c=u.indexOf(',');if(c<0)return 0;
@@ -1399,16 +1508,20 @@ function loadImageFile(f,cb){
   r.readAsDataURL(f);
 }
 
+// apply a finished asset {src,size,name,note} to a slot
+function applyAsset(k,res){
+  S[k+'Src']=res.src;
+  document.getElementById('pv-'+k).src=res.src;
+  document.getElementById('ua-'+k).classList.add('has');
+  showSize('sz-'+k,res.size,res.note);
+  saveToLib(k,res.name,res.size,res.src);
+  if(k==='ctaBtn'){var _sw=document.getElementById('cta-style-wrap');if(_sw)_sw.style.display='none';}
+  refreshPreview();
+}
+
 function readImg(k,f){
-  loadImageFile(f,function(res){
-    S[k+'Src']=res.src;
-    document.getElementById('pv-'+k).src=res.src;
-    document.getElementById('ua-'+k).classList.add('has');
-    showSize('sz-'+k,res.size,res.note);
-    saveToLib(k,res.name,res.size,res.src);
-    if(k==='ctaBtn'){var _sw=document.getElementById('cta-style-wrap');if(_sw)_sw.style.display='none';}
-    refreshPreview();
-  });
+  if(/^video\//.test(f.type||'')){ compressVideo(k,f); return; }
+  loadImageFile(f,function(res){ applyAsset(k,res); });
 }
 
 function clearImg(e,k){
