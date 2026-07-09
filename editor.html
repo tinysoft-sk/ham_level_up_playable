@@ -239,8 +239,20 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
 
-/* ── WEBP AUTO-COMPRESS BAR ── */
-#webp-bar{display:flex;flex-direction:column;gap:7px;margin:10px 11px 4px;padding:9px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:8px}
+/* ── CONFIG-PANEL ORIENTATION SWITCH ── */
+#cfg-orient{display:flex;align-items:center;gap:6px;margin:10px 11px 0;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px}
+.cfg-orient-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-right:2px;flex-shrink:0}
+.cfg-orient-btn{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;font-weight:700;padding:6px 4px;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.cfg-orient-btn:hover{color:var(--text)}
+.cfg-orient-btn.active{background:rgba(124,58,237,.2);border-color:var(--purple);color:#c4a8ff}
+
+/* ── UPLOAD SETTINGS (WebP) DISCLOSURE ── */
+#webp-bar{margin:8px 11px 4px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+#webp-bar>summary{list-style:none;cursor:pointer;padding:8px 11px;font-size:12px;font-weight:600;color:var(--text);user-select:none;display:flex;align-items:center;gap:6px}
+#webp-bar>summary::-webkit-details-marker{display:none}
+#webp-bar>summary::after{content:'▼';margin-left:auto;font-size:9px;color:var(--muted);transition:transform .2s}
+#webp-bar[open]>summary::after{transform:rotate(180deg)}
+.webp-body{display:flex;flex-direction:column;gap:7px;padding:0 11px 10px}
 .webp-toggle-lbl{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer}
 .webp-toggle-lbl input{cursor:pointer}
 .webp-dim{color:var(--muted);font-weight:400}
@@ -312,19 +324,29 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
     <button class="tab-btn" data-tab="export" onclick="switchTab('export')">📡 Export</button>
   </div>
 
-  <!-- WEBP AUTO-COMPRESS -->
-  <div id="webp-bar">
-    <label class="webp-toggle-lbl">
-      <input type="checkbox" id="webp-toggle" checked onchange="onWebpToggle(this)">
-      <span>🗜️ Auto-compress images → WebP <span class="webp-dim">(PNG / JPG)</span></span>
-    </label>
-    <div id="webp-q-row" class="sl-row">
-      <span class="webp-q-lbl">Quality</span>
-      <input type="range" id="webp-q" min="60" max="100" value="85" oninput="onWebpQuality(this.value)">
-      <div class="sl-val" id="webp-q-val">85%</div>
-    </div>
-    <div class="fhint" style="margin-top:0">Static PNG/JPG uploads are re-encoded to WebP in-browser. Animated GIF/WebP and video pass through untouched.</div>
+  <!-- CONFIG-PANEL ORIENTATION SWITCH -->
+  <div id="cfg-orient">
+    <span class="cfg-orient-lbl">Editing</span>
+    <button class="cfg-orient-btn active" data-orient="portrait" onclick="setOrientation('portrait')">📱 Portrait</button>
+    <button class="cfg-orient-btn" data-orient="landscape" onclick="setOrientation('landscape')">📺 Landscape</button>
   </div>
+
+  <!-- UPLOAD SETTINGS (WebP) DISCLOSURE — Assets tab only -->
+  <details id="webp-bar">
+    <summary>⚙️ Upload settings <span class="webp-dim">— auto WebP compression</span></summary>
+    <div class="webp-body">
+      <label class="webp-toggle-lbl">
+        <input type="checkbox" id="webp-toggle" checked onchange="onWebpToggle(this)">
+        <span>🗜️ Auto-compress images → WebP <span class="webp-dim">(PNG / JPG)</span></span>
+      </label>
+      <div id="webp-q-row" class="sl-row">
+        <span class="webp-q-lbl">Quality</span>
+        <input type="range" id="webp-q" min="60" max="100" value="85" oninput="onWebpQuality(this.value)">
+        <div class="sl-val" id="webp-q-val">85%</div>
+      </div>
+      <div class="fhint" style="margin-top:0">Static PNG/JPG uploads are re-encoded to WebP in-browser. Animated GIF/WebP and video pass through untouched.</div>
+    </div>
+  </details>
 
   <!-- Base Unit -->
   <div class="sec" id="s-unit">
@@ -398,7 +420,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 
   <!-- Stage 3 (optional) -->
-  <div class="sec" id="s-lv2">
+  <div class="sec closed" id="s-lv2">
     <div class="sec-hd" onclick="toggleSec('s-lv2')"><span class="sec-icon">⭐</span><span class="sec-title">Stage 3 — Final Form <em style="font-size:10px;color:var(--muted);font-style:normal">(optional)</em></span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div class="phase-tag phase-game">Stage 3 · Optional second transform</div>
@@ -441,7 +463,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 
   <!-- Branding / Logo -->
-  <div class="sec" id="s-logo">
+  <div class="sec closed" id="s-logo">
     <div class="sec-hd" onclick="toggleSec('s-logo')"><span class="sec-icon">🎨</span><span class="sec-title">Branding &amp; Logo</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div>
@@ -472,7 +494,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 
   <!-- Background -->
-  <div class="sec" id="s-bg">
+  <div class="sec closed" id="s-bg">
     <div class="sec-hd" onclick="toggleSec('s-bg')"><span class="sec-icon">🌄</span><span class="sec-title">Background</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div class="fhint" style="margin-top:0">Upload portrait, landscape, or both — the ad swaps automatically.</div>
@@ -516,7 +538,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 
   <!-- Intro Scene -->
-  <div class="sec" id="s-intro">
+  <div class="sec closed" id="s-intro">
     <div class="sec-hd" onclick="toggleSec('s-intro')"><span class="sec-icon">🎬</span><span class="sec-title">Intro Scene</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div class="phase-tag phase-intro">Phase 1 — Before Game</div>
@@ -551,7 +573,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 
   <!-- Outro Scene -->
-  <div class="sec" id="s-outro">
+  <div class="sec closed" id="s-outro">
     <div class="sec-hd" onclick="toggleSec('s-outro')"><span class="sec-icon">🏁</span><span class="sec-title">Outro Scene</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div class="phase-tag phase-outro">Phase 4 — After Level Up</div>
@@ -579,7 +601,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 
   <!-- Sounds -->
-  <div class="sec" id="s-snd">
+  <div class="sec closed" id="s-snd">
     <div class="sec-hd" onclick="toggleSec('s-snd')"><span class="sec-icon">🔊</span><span class="sec-title">Sounds</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div>
@@ -636,7 +658,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 
   <!-- Stats / Abilities Card -->
-  <div class="sec" id="s-stats">
+  <div class="sec closed" id="s-stats">
     <div class="sec-hd" onclick="toggleSec('s-stats')"><span class="sec-icon">📊</span><span class="sec-title">Stats Card</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div class="tog-row"><span class="tog-lbl">Show stats card after level-up</span><label class="toggle"><input type="checkbox" id="fx-stats" onchange="onStatsToggle()"><span class="trk"></span></label></div>
@@ -711,7 +733,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 
   <!-- End Game Panel -->
-  <div class="sec" id="s-gp">
+  <div class="sec closed" id="s-gp">
     <div class="sec-hd" onclick="toggleSec('s-gp')"><span class="sec-icon">🏆</span><span class="sec-title">End Game Panel</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div class="tog-row"><span class="tog-lbl">Show competition panel on CTA</span><label class="toggle"><input type="checkbox" id="fx-gp" onchange="onGpToggle()"><span class="trk"></span></label></div>
@@ -861,7 +883,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 
   <!-- Fonts -->
-  <div class="sec" id="s-font">
+  <div class="sec closed" id="s-font">
     <div class="sec-hd" onclick="toggleSec('s-font')"><span class="sec-icon">🔤</span><span class="sec-title">Fonts</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div>
@@ -886,7 +908,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 
   <!-- Layout -->
-  <div class="sec" id="s-layout">
+  <div class="sec closed" id="s-layout">
     <div class="sec-hd" onclick="toggleSec('s-layout')"><span class="sec-icon">📐</span><span class="sec-title">Layout &amp; Positions</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div class="drag-hint">✋ Drag any element in the preview — <strong>logo, unit, stars, hint text, stats card</strong> — to reposition it for the <strong id="drag-orient-lbl">portrait</strong> layout.</div>
@@ -901,7 +923,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   </div>
 
   <!-- Effects -->
-  <div class="sec" id="s-fx">
+  <div class="sec closed" id="s-fx">
     <div class="sec-hd" onclick="toggleSec('s-fx')"><span class="sec-icon">🎆</span><span class="sec-title">Transformation Effects</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div class="tog-row"><span class="tog-lbl">✨ Particle burst</span><label class="toggle"><input type="checkbox" id="fx-pt" checked onchange="onFx()"><span class="trk"></span></label></div>
@@ -991,7 +1013,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
     </div>
   </div>
   <div class="prev-controls">
-    <button class="pbtn" onclick="resetPreview()">↺ Reset preview</button>
+    <button class="pbtn" onclick="resetPreview()">▶ Replay</button>
     <div id="size-pill"><div id="size-dot"></div><span id="size-txt">…</span></div>
   </div>
 </section>
@@ -1673,7 +1695,7 @@ function setOrientation(o){
   document.getElementById('phone-shell').className='phone-shell '+o;
   document.getElementById('phone-screen').className='phone-screen '+o;
   document.getElementById('pframe').className=o;
-  document.querySelectorAll('.orient-btn').forEach(function(b){
+  document.querySelectorAll('.orient-btn,.cfg-orient-btn').forEach(function(b){
     b.classList.toggle('active',b.dataset.orient===o);
   });
   syncSlidersToOrientation();
@@ -1969,6 +1991,9 @@ function switchTab(tab){
   document.querySelectorAll('.tab-btn').forEach(function(b){
     b.classList.toggle('active',b.dataset.tab===tab);
   });
+  // WebP upload-settings disclosure is only relevant on the Assets tab
+  var wb=document.getElementById('webp-bar');
+  if(wb) wb.style.display=(tab==='assets')?'':'none';
 }
 
 // ══════════════════════════════════════════════════════════
