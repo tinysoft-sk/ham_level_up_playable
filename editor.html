@@ -1602,7 +1602,9 @@ function onVignette(v){
   refreshPreview();
 }
 function onNameField(){
-  S.projekt=document.getElementById('nm-projekt').value;
+  var sel=document.getElementById('nm-projekt');
+  if(sel.value==='__add__'){ addProject(); return; }
+  S.projekt=sel.value;
   S.koncept=document.getElementById('nm-koncept').value;
   S.version=document.getElementById('nm-version').value;
   updateNamePreview();
@@ -1611,6 +1613,44 @@ function onNameField(){
 function nameToken(t,fallback){
   t=(t||'').trim().replace(/\s+/g,'-').replace(/[^A-Za-z0-9-]/g,'');
   return t||fallback;
+}
+
+// ── Project catalog (dropdown options, persisted in localStorage) ──
+var DEFAULT_PROJECTS=['HAM','TNG','HFB'];
+function loadProjects(){
+  var custom=[];
+  try{ custom=JSON.parse(localStorage.getItem('mwl_projects')||'[]')||[]; }catch(e){}
+  var seen={}, out=[];
+  DEFAULT_PROJECTS.concat(custom).forEach(function(p){
+    p=(p||'').trim(); if(!p||seen[p.toUpperCase()])return; seen[p.toUpperCase()]=1; out.push(p);
+  });
+  return out;
+}
+function saveCustomProjects(list){
+  var custom=list.filter(function(p){return DEFAULT_PROJECTS.indexOf(p)<0;});
+  try{ localStorage.setItem('mwl_projects',JSON.stringify(custom)); }catch(e){}
+}
+function renderProjectOptions(selected){
+  var sel=document.getElementById('nm-projekt');
+  if(!sel)return;
+  var list=loadProjects();
+  selected=selected||S.projekt||list[0];
+  if(list.indexOf(selected)<0){ list.push(selected); saveCustomProjects(list); }
+  var html='';
+  list.forEach(function(p){ html+='<option value="'+p+'">'+p+'</option>'; });
+  html+='<option value="__add__">➕ Add project…</option>';
+  sel.innerHTML=html;
+  sel.value=selected;
+}
+function addProject(){
+  var raw=prompt('New project code (letters/numbers, e.g. HAM):','');
+  var name=nameToken(raw,'').toUpperCase();
+  if(!name){ renderProjectOptions(S.projekt); return; }   // cancelled/empty — keep current
+  var list=loadProjects();
+  if(list.indexOf(name)<0){ list.push(name); saveCustomProjects(list); }
+  S.projekt=name;
+  renderProjectOptions(name);
+  updateNamePreview();
 }
 // base file name without network suffix or extension
 function baseName(){
@@ -2158,7 +2198,7 @@ function syncUIFromState(){
   var s=S;
 
   // Text inputs
-  var _pj=document.getElementById('nm-projekt');if(_pj)_pj.value=s.projekt||'HAM';
+  renderProjectOptions(s.projekt||'HAM');
   var _kc=document.getElementById('nm-koncept');if(_kc)_kc.value=(s.koncept!=null?s.koncept:'koncept');
   var _vr=document.getElementById('nm-version');if(_vr)_vr.value=s.version||'V1';
   updateNamePreview();
@@ -3325,6 +3365,7 @@ switchTab('assets');
 loadPresetList();
 renderStatsRows();
 renderStarStepsUI();
+renderProjectOptions(S.projekt);
 updateNamePreview();
 refreshPreview();
 </script>
