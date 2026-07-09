@@ -80,6 +80,8 @@ input[type=range]{flex:1;height:4px;accent-color:var(--purple);cursor:pointer}
 .lib-btn{width:100%;background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;padding:5px 10px;cursor:pointer;margin-top:6px;transition:border-color .2s,color .2s;text-align:left;display:flex;align-items:center;gap:5px}
 .lib-btn:hover{border-color:var(--purple);color:var(--text)}
 .lib-count{margin-left:auto;background:var(--surface2);border-radius:10px;padding:1px 7px;font-size:10px;color:var(--muted)}
+.rc-btn{justify-content:center;text-align:center;border-color:rgba(240,192,64,.5);color:var(--gold)}
+.rc-btn:hover{border-color:var(--gold);color:var(--gold)}
 
 .snd-row{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;cursor:pointer;transition:border-color .2s}
 .snd-row:hover{border-color:var(--purple)}
@@ -1461,33 +1463,64 @@ function extractFrames(f,onProgress){
   });
 }
 
+// retained source video per slot, so settings can be tweaked and re-applied
+// without re-uploading. { file, frames, w, h, count, hadAlpha, key }
+var _srcVideo={};
+
 function compressVideo(k,f){
-  // no encoder or disabled → keep the original video untouched
+  _srcVideo[k]={file:f, frames:null, key:''};
+  runVideoCompression(k);
+}
+function recompressVideo(k){
+  if(_srcVideo[k]&&_srcVideo[k].file) runVideoCompression(k);
+}
+function runVideoCompression(k){
+  var rec=_srcVideo[k], f=rec.file;
+  // no encoder or disabled → keep the original video untouched (never libbed)
   if(!vidEnabled || typeof UPNG==='undefined' || typeof pako==='undefined'){
-    fileToDataUrl(f).then(function(u){ applyAsset(k,{src:u,size:f.size,name:f.name,note:''}); });
+    fileToDataUrl(f).then(function(u){ applyAsset(k,{src:u,size:f.size,name:f.name,note:''},{noLib:true}); showRecompress(k); });
     return;
   }
-  tileStatus(k,'Reading video…');
-  extractFrames(f,function(p){ tileStatus(k,'Extracting frames… '+Math.round(p*100)+'%'); }).then(function(ex){
+  var key=vidMaxW+'x'+vidFps;
+  var encode=function(ex){
+    rec.frames=ex.frames; rec.w=ex.w; rec.h=ex.h; rec.count=ex.count; rec.hadAlpha=ex.hadAlpha; rec.key=key;
     if(!ex.hadAlpha){ // opaque — APNG would bloat; keep as video
-      return fileToDataUrl(f).then(function(u){ applyAsset(k,{src:u,size:f.size,name:f.name,note:'⚠️ no transparency — kept as video'}); });
+      fileToDataUrl(f).then(function(u){ applyAsset(k,{src:u,size:f.size,name:f.name,note:'⚠️ no transparency — kept as video'},{noLib:true}); showRecompress(k); });
+      return;
     }
     tileStatus(k,'Encoding APNG…');
     var delays=[]; for(var j=0;j<ex.count;j++) delays.push(Math.round(1000/vidFps));
-    // defer so the status paint lands before the (sync) encode blocks
-    return new Promise(function(res){ setTimeout(function(){
+    setTimeout(function(){ // let the status paint before the sync encode
       var buf=UPNG.encode(ex.frames, ex.w, ex.h, vidColors, delays);
       if(!vidLoop) setApngPlays(buf,1); // play once, hold final frame
       bufToDataUrl(buf,'image/png').then(function(u){
-        var note='✓ '+ex.count+'f APNG'+(f.size?' −'+Math.round((1-buf.byteLength/f.size)*100)+'%':'');
-        applyAsset(k,{src:u,size:buf.byteLength,name:f.name.replace(/\.\w+$/,'')+'.png',note:note});
-        res();
+        var note='✓ '+ex.count+'f · '+ex.w+'×'+ex.h+' · '+(vidColors===0?'lossless':vidColors+'c')+(f.size?' · −'+Math.round((1-buf.byteLength/f.size)*100)+'%':'');
+        applyAsset(k,{src:u,size:buf.byteLength,name:f.name.replace(/\.\w+$/,'')+'.png',note:note},{noLib:true});
+        showRecompress(k);
       });
-    },30); });
-  }).catch(function(err){
-    fileToDataUrl(f).then(function(u){ applyAsset(k,{src:u,size:f.size,name:f.name,note:'⚠️ compress failed — kept original'}); });
-  });
+    },30);
+  };
+  // reuse cached frames when only colours/loop changed (same width + fps)
+  if(rec.frames && rec.key===key){ tileStatus(k,'Encoding APNG…'); encode(rec); return; }
+  tileStatus(k,'Reading video…');
+  extractFrames(f,function(p){ tileStatus(k,'Extracting frames… '+Math.round(p*100)+'%'); })
+    .then(encode)
+    .catch(function(){ fileToDataUrl(f).then(function(u){ applyAsset(k,{src:u,size:f.size,name:f.name,note:'⚠️ compress failed — kept original'},{noLib:true}); }); });
 }
+// show/refresh the "Recompress" button under a video slot
+function showRecompress(k){
+  var sz=document.getElementById('sz-'+k); if(!sz)return;
+  var btn=document.getElementById('rc-'+k);
+  if(!btn){
+    btn=document.createElement('button');
+    btn.id='rc-'+k; btn.className='lib-btn rc-btn';
+    btn.textContent='↻ Recompress with current settings';
+    btn.onclick=function(){ recompressVideo(k); };
+    sz.parentNode.insertBefore(btn, sz.nextSibling);
+  }
+  btn.style.display='';
+}
+function hideRecompress(k){ var b=document.getElementById('rc-'+k); if(b)b.style.display='none'; }
 
 // bytes encoded in a base64 data URL
 function dataUrlBytes(u){
@@ -1526,13 +1559,14 @@ function loadImageFile(f,cb){
   r.readAsDataURL(f);
 }
 
-// apply a finished asset {src,size,name,note} to a slot
-function applyAsset(k,res){
+// apply a finished asset {src,size,name,note} to a slot.
+// opts.noLib skips saving to the library (used for iterative video compression).
+function applyAsset(k,res,opts){
   S[k+'Src']=res.src;
   document.getElementById('pv-'+k).src=res.src;
   document.getElementById('ua-'+k).classList.add('has');
   showSize('sz-'+k,res.size,res.note);
-  saveToLib(k,res.name,res.size,res.src);
+  if(!(opts&&opts.noLib)) saveToLib(k,res.name,res.size,res.src);
   if(k==='ctaBtn'){var _sw=document.getElementById('cta-style-wrap');if(_sw)_sw.style.display='none';}
   refreshPreview();
 }
@@ -1549,6 +1583,7 @@ function clearImg(e,k){
   document.getElementById('ua-'+k).classList.remove('has');
   document.getElementById('fi-'+k).value='';
   hideSize('sz-'+k);
+  delete _srcVideo[k]; hideRecompress(k);
   if(k==='ctaBtn'){var _sw=document.getElementById('cta-style-wrap');if(_sw)_sw.style.display='';}
   refreshPreview();
 }
