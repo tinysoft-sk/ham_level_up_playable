@@ -236,6 +236,14 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 .pbar-btn{display:inline-flex;align-items:center;background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;font-weight:600;padding:5px 9px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:border-color .15s,color .15s}
 .pbar-btn:hover{border-color:var(--gold);color:var(--gold)}
 .pbar-div{width:1px;height:20px;background:var(--border);flex-shrink:0}
+
+/* ── EXPORT FILE NAME BUILDER ── */
+.name-grid{display:grid;grid-template-columns:92px 1fr 72px;gap:8px;margin-top:2px}
+.name-sub{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.name-grid select,.name-grid input[type=text]{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .2s}
+.name-grid select:focus,.name-grid input[type=text]:focus{border-color:var(--purple)}
+.name-preview{font-size:11px;color:var(--muted);margin-top:8px}
+.name-preview code{color:var(--gold)}
 .pbar-save{border-color:rgba(124,58,237,.55);color:var(--text)}
 .pbar-save:hover{border-color:var(--purple)!important;color:#c4aaff!important}
 
@@ -993,9 +1001,27 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
     <div class="sec-hd" onclick="toggleSec('s-net')"><span class="sec-icon">📡</span><span class="sec-title">Network Options</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
       <div>
-        <div class="flabel">Playable Name</div>
-        <input type="text" id="ad-name" value="magic-war-legends" placeholder="my-playable-ad" oninput="onAdName()">
-        <div class="fhint">Filename prefix for all exports — e.g. <code>my-game-facebook.html</code></div>
+        <div class="flabel">Export File Name</div>
+        <div class="name-grid">
+          <div>
+            <div class="name-sub">Project</div>
+            <select id="nm-projekt" onchange="onNameField()">
+              <option value="HAM">HAM</option>
+              <option value="TNG">TNG</option>
+              <option value="HFB">HFB</option>
+            </select>
+          </div>
+          <div>
+            <div class="name-sub">Concept</div>
+            <input type="text" id="nm-koncept" value="koncept" placeholder="concept" oninput="onNameField()">
+          </div>
+          <div>
+            <div class="name-sub">Version</div>
+            <input type="text" id="nm-version" value="V1" placeholder="V1" oninput="onNameField()">
+          </div>
+        </div>
+        <div class="fhint">Format <code>PROJECT_play_CONCEPT_VERSION_NETWORK</code> — <code>play</code> is fixed, network is added automatically per export.</div>
+        <div class="name-preview">e.g. Facebook → <code id="nm-preview">HAM_play_koncept_V1_Facebook.html</code></div>
       </div>
       <div>
         <div class="flabel">Save / Load Project</div>
@@ -1093,7 +1119,10 @@ var S = {
   lv2Blend:40,
   stage2AtTap:null,
   lv2AtTap:null,
-  adName:'magic-war-legends',
+  // export file name: PROJECT_play_CONCEPT_VERSION_NETWORK
+  projekt:'HAM',
+  koncept:'koncept',
+  version:'V1',
   tapText:'TAP TO LEVEL UP!',
   lvText:'★ LEVEL UP! ★',
   ctaText:'PLAY NOW — FREE',
@@ -1572,8 +1601,25 @@ function onVignette(v){
   document.getElementById('vig-preview').style.opacity=v>0?1:0.3;
   refreshPreview();
 }
-function onAdName(){
-  S.adName=(document.getElementById('ad-name').value.trim())||'playable';
+function onNameField(){
+  S.projekt=document.getElementById('nm-projekt').value;
+  S.koncept=document.getElementById('nm-koncept').value;
+  S.version=document.getElementById('nm-version').value;
+  updateNamePreview();
+}
+// sanitize one underscore-separated token (keeps case, no spaces/underscores)
+function nameToken(t,fallback){
+  t=(t||'').trim().replace(/\s+/g,'-').replace(/[^A-Za-z0-9-]/g,'');
+  return t||fallback;
+}
+// base file name without network suffix or extension
+function baseName(){
+  return [nameToken(S.projekt,'HAM'),'play',nameToken(S.koncept,'concept'),nameToken(S.version,'V1')].join('_');
+}
+var NET_NAME={fb:'Facebook',google:'Google',unity:'Unity',mintegral:'Mintegral'};
+function updateNamePreview(){
+  var el=document.getElementById('nm-preview');
+  if(el)el.textContent=baseName()+'_Facebook.html';
 }
 function onText(){
   S.tapText=document.getElementById('t-tap').value;
@@ -1793,7 +1839,7 @@ function _dlBlob(blob,filename){
 // ── Project Save / Load ───────────────────────────────────
 function exportPlayable(){
   var json=JSON.stringify(S,null,2);
-  _dlBlob(new Blob([json],{type:'application/json'}),adSlug()+'.json');
+  _dlBlob(new Blob([json],{type:'application/json'}),baseName()+'.json');
 }
 function importPlayable(file){
   if(!file)return;
@@ -1815,21 +1861,18 @@ function importPlayable(file){
   };
   r.readAsText(file);
 }
-function adSlug(){
-  return (S.adName||'playable').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'playable';
-}
 function exportAd(network){
   var html=buildAd(network);
-  var slug=adSlug();
+  var base=baseName();
+  var net=NET_NAME[network]||network;
   if(network==='google'){
     var data=new TextEncoder().encode(html);
-    _dlBlob(new Blob([buildZip([{path:'index.html',data:data}])],{type:'application/zip'}),slug+'-google.zip');
+    _dlBlob(new Blob([buildZip([{path:'index.html',data:data}])],{type:'application/zip'}),base+'_'+net+'.zip');
   } else if(network==='mintegral'){
     var data=new TextEncoder().encode(html);
-    _dlBlob(new Blob([buildZip([{path:slug+'/index.html',data:data}])],{type:'application/zip'}),slug+'-mintegral.zip');
+    _dlBlob(new Blob([buildZip([{path:base+'_'+net+'/index.html',data:data}])],{type:'application/zip'}),base+'_'+net+'.zip');
   } else {
-    var fn={fb:slug+'-facebook.html',unity:slug+'-unity-applovin.html'}[network]||slug+'-'+network+'.html';
-    _dlBlob(new Blob([html],{type:'text/html'}),fn);
+    _dlBlob(new Blob([html],{type:'text/html'}),base+'_'+net+'.html');
   }
 }
 
@@ -2115,7 +2158,10 @@ function syncUIFromState(){
   var s=S;
 
   // Text inputs
-  var _nameEl=document.getElementById('ad-name');if(_nameEl)_nameEl.value=s.adName||'magic-war-legends';
+  var _pj=document.getElementById('nm-projekt');if(_pj)_pj.value=s.projekt||'HAM';
+  var _kc=document.getElementById('nm-koncept');if(_kc)_kc.value=(s.koncept!=null?s.koncept:'koncept');
+  var _vr=document.getElementById('nm-version');if(_vr)_vr.value=s.version||'V1';
+  updateNamePreview();
   document.getElementById('t-tap').value=s.tapText;
   document.getElementById('t-lv').value=s.lvText;
   document.getElementById('t-cta').value=s.ctaText;
@@ -3279,6 +3325,7 @@ switchTab('assets');
 loadPresetList();
 renderStatsRows();
 renderStarStepsUI();
+updateNamePreview();
 refreshPreview();
 </script>
 </body>
