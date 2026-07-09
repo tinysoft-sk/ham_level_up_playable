@@ -284,6 +284,19 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
 .timing-lbl .opt{font-style:normal;color:var(--muted);font-size:10px}
 .timing-of{font-size:12px;color:var(--muted);white-space:nowrap}
 
+/* ── LAYERS PANEL ── */
+.layer-row{display:flex;align-items:center;gap:7px;padding:5px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;margin-top:5px}
+.layer-row.hidden{opacity:.5}
+.layer-ord{display:flex;flex-direction:column;gap:2px}
+.layer-arrow{width:22px;height:13px;line-height:1;font-size:8px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--muted);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+.layer-arrow:hover:not(:disabled){border-color:var(--purple);color:var(--text)}
+.layer-arrow:disabled{opacity:.3;cursor:default}
+.layer-name{flex:1;font-size:12px;color:var(--text)}
+.layer-name em{font-style:normal;color:var(--muted);font-size:10px}
+.layer-btn{width:28px;height:25px;background:var(--surface);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-size:12px;padding:0}
+.layer-btn.on{border-color:var(--purple);background:rgba(124,58,237,.12)}
+.layer-btn:hover{border-color:var(--purple)}
+
 /* ── STAR STEPS EDITOR ── */
 .ss-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:6px 0 2px}
 .ss-step{display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -954,7 +967,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
   <div class="sec closed" id="s-layout">
     <div class="sec-hd" onclick="toggleSec('s-layout')"><span class="sec-icon">📐</span><span class="sec-title">Layout &amp; Positions</span><span class="sec-arr">▼</span></div>
     <div class="sec-body">
-      <div class="drag-hint">✋ Drag any element in the preview — <strong>logo, unit, stars, hint text, stats card</strong> — to reposition it for the <strong id="drag-orient-lbl">portrait</strong> layout.</div>
+      <div class="drag-hint">✋ Turn on <strong>✏️ Edit Layout</strong> above the preview, then drag <strong>any</strong> element — logo, unit, stars, hint, banner, CTA, stats — for the <strong id="drag-orient-lbl">portrait</strong> layout.</div>
       <div class="fhint">Or type exact values (0–100 % of screen). Switch the preview orientation above to edit the other layout.</div>
       <div id="pos-fields" style="display:flex;flex-direction:column;gap:10px;margin-top:2px"></div>
       <div class="copy-row" style="margin-top:2px">
@@ -962,6 +975,15 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
         <button class="copy-btn" onclick="copyLayout('landscape','portrait')">📺→📱 Copy L to P</button>
       </div>
       <button class="pbtn" style="width:100%;font-size:11px" onclick="resetPositions()">↺ Reset current orientation to default</button>
+    </div>
+  </div>
+
+  <!-- Layers -->
+  <div class="sec closed" id="s-layers">
+    <div class="sec-hd" onclick="toggleSec('s-layers')"><span class="sec-icon">🗂️</span><span class="sec-title">Layers</span><span class="sec-arr">▼</span></div>
+    <div class="sec-body">
+      <div class="fhint" style="margin-top:0">Top of the list = drawn on top. Reorder with ▲▼, toggle 👁 to show/hide, 🔒 to lock from dragging. Shared across both orientations.</div>
+      <div id="layers-list"></div>
     </div>
   </div>
 
@@ -1205,6 +1227,16 @@ var S = {
   gpNum:'5',
   gpR1Src:null, gpR1Val:'310',
   gpR2Src:null, gpR2Val:'500',
+  // v6.2 — layers (z-order, shared across orientations). Array is top-first.
+  layers:[
+    {id:'cta',   vis:true, lock:false},
+    {id:'stats', vis:true, lock:false},
+    {id:'lvtext',vis:true, lock:false},
+    {id:'hint',  vis:true, lock:false},
+    {id:'unit',  vis:true, lock:false},
+    {id:'stars', vis:true, lock:false},
+    {id:'logo',  vis:true, lock:false}
+  ],
   // v5.1 — per-orientation layout
   perOrient:{
     portrait:  makeOrientState(72, 72, 50),
@@ -1254,6 +1286,75 @@ function ensurePosKeys(o){
   if(!o||!o.pos)return;
   POS_KEYS.forEach(function(k){ if(!o.pos[k]) o.pos[k]={x:POS_DEFAULTS_P[k].x,y:POS_DEFAULTS_P[k].y}; });
 }
+
+// ══════════════════════════════════════════════════════════
+//  LAYERS  (z-order + visibility + lock; shared across orientations)
+// ══════════════════════════════════════════════════════════
+// meta per layer: label, DOM element id, drag posId, and the state key that
+// tells whether the element actually has content (so we can dim empty layers)
+var LAYER_META={
+  cta:   {label:'CTA Button',      icon:'🔘', el:'cta', pos:'cta',    has:function(){return true;}},
+  stats: {label:'Stats Card',      icon:'📊', el:'sc',  pos:'sc',     has:function(){return !!S.statsEnabled;}},
+  lvtext:{label:'Level-Up Banner',  icon:'✨', el:'lv',  pos:'lvtext', has:function(){return true;}},
+  hint:  {label:'Tap Hint',        icon:'👆', el:'hint',pos:'hint',   has:function(){return true;}},
+  unit:  {label:'Unit',            icon:'⚔️', el:'uw',  pos:'unit',   has:function(){return true;}},
+  stars: {label:'Stars',           icon:'⭐', el:'stars',pos:'stars', has:function(){return true;}},
+  logo:  {label:'Logo',            icon:'🏆', el:'logo',pos:'logo',   has:function(){return !!S.logoSrc;}}
+};
+var LAYER_DEFAULT_ORDER=['cta','stats','lvtext','hint','unit','stars','logo']; // top-first
+
+function ensureLayers(){
+  if(!Array.isArray(S.layers)) S.layers=[];
+  LAYER_DEFAULT_ORDER.forEach(function(id){
+    if(!S.layers.some(function(l){return l&&l.id===id;})) S.layers.push({id:id,vis:true,lock:false});
+  });
+  S.layers=S.layers.filter(function(l){return l&&LAYER_META[l.id];});
+}
+// map layer id → z-index (top of list = highest z). Band chosen to preserve
+// the classic stack: game elements below the outro (10), end elements above.
+function layerZMap(){
+  ensureLayers();
+  var m={}, n=S.layers.length;
+  S.layers.forEach(function(l,i){ m[l.id]=2+(n-1-i)*2; }); // 2..14 for 7 layers
+  return m;
+}
+function layerVisible(id){
+  ensureLayers();
+  var l=S.layers.filter(function(x){return x.id===id;})[0];
+  return !l||l.vis!==false;
+}
+// ── Layers panel UI ──
+function renderLayers(){
+  var wrap=document.getElementById('layers-list'); if(!wrap)return;
+  ensureLayers();
+  var html='';
+  S.layers.forEach(function(l,i){
+    var m=LAYER_META[l.id]; if(!m)return;
+    var present=m.has();
+    var hidden=(l.vis===false);
+    html+='<div class="layer-row'+(present?'':' empty')+(hidden?' hidden':'')+'">'+
+      '<div class="layer-ord">'+
+        '<button class="layer-arrow" title="Bring forward" '+(i===0?'disabled':'')+' onclick="layerMove(\''+l.id+'\',-1)">▲</button>'+
+        '<button class="layer-arrow" title="Send backward" '+(i===S.layers.length-1?'disabled':'')+' onclick="layerMove(\''+l.id+'\',1)">▼</button>'+
+      '</div>'+
+      '<span class="layer-name">'+m.icon+' '+m.label+(present?'':' <em>(empty)</em>')+'</span>'+
+      '<button class="layer-btn'+(hidden?'':' on')+'" title="Show / hide in the ad" onclick="layerToggleVis(\''+l.id+'\')">'+(hidden?'🙈':'👁')+'</button>'+
+      '<button class="layer-btn'+(l.lock?' on':'')+'" title="Lock from dragging" onclick="layerToggleLock(\''+l.id+'\')">'+(l.lock?'🔒':'🔓')+'</button>'+
+    '</div>';
+  });
+  wrap.innerHTML=html;
+}
+function _layerBy(id){ return S.layers.filter(function(x){return x.id===id;})[0]; }
+function layerMove(id,dir){
+  ensureLayers();
+  var i=-1; S.layers.forEach(function(l,k){ if(l.id===id)i=k; });
+  var j=i+dir;
+  if(i<0||j<0||j>=S.layers.length)return;
+  var t=S.layers[i]; S.layers[i]=S.layers[j]; S.layers[j]=t;
+  renderLayers(); refreshPreview();
+}
+function layerToggleVis(id){ var l=_layerBy(id); if(!l)return; l.vis=(l.vis===false); renderLayers(); refreshPreview(); }
+function layerToggleLock(id){ var l=_layerBy(id); if(!l)return; l.lock=!l.lock; renderLayers(); refreshPreview(); }
 
 function buildPosFields(){
   var container=document.getElementById('pos-fields');
@@ -2267,7 +2368,7 @@ function applyLibAsset(cat,dataUrl,name,size){
 var TAB_SECTIONS={
   assets:['s-unit','s-lv','s-lv2','s-logo','s-bg','s-intro','s-outro','s-snd'],
   game:  ['s-cl','s-stats','s-gp'],
-  style: ['s-txt','s-font','s-layout','s-fx'],
+  style: ['s-txt','s-font','s-layout','s-layers','s-fx'],
   export:['s-net']
 };
 var _activeTab='assets';
@@ -2376,6 +2477,7 @@ function applyPreset(data){
   }
   if(!Array.isArray(S.starSteps)||S.starSteps.length<2)S.starSteps=[0,1,2,3,4,5];
   migratePositions();
+  ensureLayers();
   syncUIFromState();
   refreshPreview();
 }
@@ -2535,6 +2637,7 @@ function syncUIFromState(){
 
   // Stats rows UI
   renderStatsRows();
+  renderLayers();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2762,20 +2865,20 @@ var SC_DRAGPREP=
 '    var scl=parseFloat(scD.dataset.scale||"1");\n'+
 '    scD.style.transform="translate(-50%,-50%) scale("+scl+")";\n'+
 '    scD.style.transformOrigin="50% 50%";\n'+
-'    scD.style.pointerEvents="auto";\n'+
-'    scD.style.outline="1.5px dashed rgba(255,200,50,0.5)";scD.style.borderRadius="6px";\n'+
-'    mkDrag("sc","sc");\n'+
+'    scD.style.borderRadius="6px";\n'+
+'    if(typeof _LOCKED!=="undefined"&&_LOCKED.indexOf("sc")>=0){scD.style.pointerEvents="none";scD.style.outline="1.5px solid rgba(255,90,90,0.6)";}\n'+
+'    else{scD.style.pointerEvents="auto";scD.style.outline="1.5px dashed rgba(255,200,50,0.5)";mkDrag("sc","sc");}\n'+
 '  }\n';
 
 // Live-preview drag — only the always-visible game elements
 var DRAG_JS=
 '(function(){\n'+MKDRAG_FN+
 'window.addEventListener("load",function(){\n'+
-'  ["logo","stars","uw","hint"].forEach(function(id){\n'+
-'    var el=document.getElementById(id);if(!el)return;\n'+
-'    el.style.outline="1.5px dashed rgba(255,255,255,0.3)";el.style.borderRadius="4px";\n'+
+'  [["logo","logo"],["stars","stars"],["uw","unit"],["hint","hint"]].forEach(function(d){\n'+
+'    var el=document.getElementById(d[0]);if(!el)return;el.style.borderRadius="4px";\n'+
+'    if(typeof _LOCKED!=="undefined"&&_LOCKED.indexOf(d[1])>=0){el.style.outline="1.5px solid rgba(255,90,90,0.5)";}\n'+
+'    else{el.style.outline="1.5px dashed rgba(255,255,255,0.3)";mkDrag(d[0],d[1]);}\n'+
 '  });\n'+
-'  mkDrag("logo","logo");mkDrag("stars","stars");mkDrag("uw","unit");mkDrag("hint","hint");\n'+
 SC_DRAGPREP+
 '});\n'+
 '})();\n';
@@ -2792,9 +2895,9 @@ var LAYOUT_JS=
 '  var hint=document.getElementById("hint");if(hint)hint.style.opacity="1";\n'+
 '  ["intro-ov","outro-ov"].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display="none";});\n'+
 '  [["logo","logo"],["stars","stars"],["uw","unit"],["hint","hint"],["lv","lvtext"],["cta","cta"]].forEach(function(d){\n'+
-'    var el=document.getElementById(d[0]);if(!el)return;\n'+
-'    el.style.pointerEvents="auto";el.style.outline="1.5px dashed rgba(120,190,255,0.7)";el.style.borderRadius="4px";\n'+
-'    mkDrag(d[0],d[1]);\n'+
+'    var el=document.getElementById(d[0]);if(!el)return;el.style.borderRadius="4px";\n'+
+'    if(typeof _LOCKED!=="undefined"&&_LOCKED.indexOf(d[1])>=0){el.style.pointerEvents="none";el.style.outline="1.5px solid rgba(255,90,90,0.6)";}\n'+
+'    else{el.style.pointerEvents="auto";el.style.outline="1.5px dashed rgba(120,190,255,0.7)";mkDrag(d[0],d[1]);}\n'+
 '  });\n'+
 SC_DRAGPREP+
 '});\n'+
@@ -2806,6 +2909,13 @@ function buildAd(network){
   var lO=s.perOrient.landscape;  // landscape layout
   ensurePosKeys(pO); ensurePosKeys(lO);
   var layoutEdit=(network==='layout'); // static all-elements-visible editing mode
+  // ── Layers: z-index + visibility (shared across orientations) ──
+  var _LZ=layerZMap();
+  function _zc(id){ return 'z-index:'+(_LZ[id]||2)+';'; }
+  // in Edit-Layout mode force everything visible so it can be positioned
+  function _disp(id){ return (layoutEdit||layerVisible(id))?'':'display:none;'; }
+  // drag posIds of locked layers — used to block dragging in the preview iframe
+  var _LOCKED_POS=S.layers.filter(function(l){return l.lock;}).map(function(l){return LAYER_META[l.id].pos;});
 
   // ── Placeholder SVGs ──────────────────────────────────
   var defUnit=svgUrl(
@@ -2890,7 +3000,7 @@ function buildAd(network){
         'border:2px solid #a07820;'+
         'box-shadow:0 0 0 1px #3a2000,0 8px 28px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,200,50,.1);'+
         'border-radius:10px;overflow:hidden;'+
-        'opacity:0;pointer-events:none;z-index:12;'+
+        'opacity:0;pointer-events:none;'+_zc('stats')+_disp('stats')+
         'transition:opacity .5s .2s;font-family:'+fontFamily+'}\n'+
         '#sc.vis{opacity:1}\n'+
         '.sc-row{display:flex;align-items:center;gap:6px;padding:5px 12px;'+
@@ -2914,7 +3024,7 @@ function buildAd(network){
         'width:min(90vw,300px);background:rgba(6,3,18,0.9);'+
         'border:1px solid rgba(200,160,60,0.4);border-radius:14px;'+
         'padding:10px 14px 8px;'+
-        'opacity:0;pointer-events:none;z-index:12;'+
+        'opacity:0;pointer-events:none;'+_zc('stats')+_disp('stats')+
         'transition:opacity .5s .2s;font-family:'+fontFamily+'}\n'+
         '#sc.vis{opacity:1}\n'+
         '.sc-row{display:flex;align-items:center;gap:6px;padding:3px 0}\n'+
@@ -3009,7 +3119,7 @@ function buildAd(network){
     ?'#logo{position:absolute;left:'+pO.pos.logo.x+'%;top:'+pO.pos.logo.y+'%;'+
         'transform:translate(-50%,-50%);display:block;'+
         'max-width:'+pO.logoSize+'vw;max-height:'+Math.round(pO.logoSize*0.45)+'vw;'+
-        'height:auto;width:auto;object-fit:contain;pointer-events:none;'+
+        'height:auto;width:auto;object-fit:contain;pointer-events:none;'+_zc('logo')+_disp('logo')+
         'filter:drop-shadow(0 2px 10px rgba(0,0,0,.7))}\n'+
       '@media(orientation:landscape){#logo{left:'+lO.pos.logo.x+'%;top:'+lO.pos.logo.y+'%;'+
         'max-width:'+lO.logoSize+'vw;max-height:'+Math.round(lO.logoSize*0.45)+'vw}}\n'
@@ -3367,9 +3477,9 @@ gameInner+
 'window.gameClose=function(){if(window._gamePause)window._gamePause();};\n'+
 'document.addEventListener("visibilitychange",function(){if(document.hidden&&window._gamePause)window._gamePause();});\n';
   } else if(network==='preview'){
-    initScript='window.addEventListener("load",function(){(function(){\n'+gameInner+'\n})();});\n'+DRAG_JS;
+    initScript='var _LOCKED='+JSON.stringify(_LOCKED_POS)+';\n'+'window.addEventListener("load",function(){(function(){\n'+gameInner+'\n})();});\n'+DRAG_JS;
   } else if(network==='layout'){
-    initScript=LAYOUT_JS; // static edit mode: no game logic, drag everything
+    initScript='var _LOCKED='+JSON.stringify(_LOCKED_POS)+';\n'+LAYOUT_JS; // static edit mode: no game logic, drag everything
   } else {
     initScript='window.addEventListener("load",function(){(function(){\n'+gameInner+'\n})();});\n';
   }
@@ -3396,8 +3506,10 @@ fontFaceCss+
 '@media(orientation:landscape){#g-bg{background-image:'+bgLand+'}}\n'+
 vigCss+
 
-// Game content layer (z:2) — children absolutely positioned
-'#g{position:fixed;inset:0;z-index:2;background:transparent;'+
+// Game content wrapper — position:absolute + z-index:auto so it does NOT form
+// a stacking context; its children take part in the root context and can be
+// freely reordered against the body-level layers (banner/cta/stats) via z-index.
+'#g{position:absolute;inset:0;background:transparent;'+
   'font-family:-apple-system,"Segoe UI",Arial,sans-serif;'+
   '-webkit-user-select:none;user-select:none;touch-action:manipulation}\n'+
 
@@ -3408,7 +3520,7 @@ logoCss+
 '#stars{position:absolute;left:'+pO.pos.stars.x+'%;top:'+pO.pos.stars.y+'%;'+
   'transform:translate(-50%,-50%);'+
   'display:flex;gap:8px;justify-content:center;padding:4px 0;'+
-  'filter:drop-shadow(0 2px 8px rgba(0,0,0,.8));white-space:nowrap}\n'+
+  'filter:drop-shadow(0 2px 8px rgba(0,0,0,.8));white-space:nowrap;'+_zc('stars')+_disp('stars')+'}\n'+
 '@media(orientation:landscape){#stars{left:'+lO.pos.stars.x+'%;top:'+lO.pos.stars.y+'%}}\n'+
 '.st{font-size:clamp(24px,calc(6 * var(--svw)),36px);color:#333;transition:color .15s,transform .15s,text-shadow .15s}\n'+
 '.st.on{color:#ffd700;text-shadow:0 0 10px #ffaa00,0 0 22px #ff6600,0 0 36px #ff3300;transform:scale(1.18)}\n'+
@@ -3417,7 +3529,7 @@ logoCss+
 
 // ── UNIT WRAPPER — portrait base ───────────────────────
 '#uw{position:absolute;left:'+pO.pos.unit.x+'%;top:'+pO.pos.unit.y+'%;'+
-  'transform:translate(-50%,-50%);display:inline-block;transition:transform .1s}\n'+
+  'transform:translate(-50%,-50%);display:inline-block;transition:transform .1s;'+_zc('unit')+_disp('unit')+'}\n'+
 '#uw:active{transform:translate(-50%,-50%) scale(.95)}\n'+
 '@media(orientation:landscape){#uw{left:'+lO.pos.unit.x+'%;top:'+lO.pos.unit.y+'%}}\n'+
 
@@ -3440,7 +3552,7 @@ logoCss+
   'transform:translate(-50%,-50%);'+
   'font-size:'+Math.round(13*s.hintTextSize/100)+'px;font-weight:700;color:'+s.hintColor+';'+
   'letter-spacing:3px;text-shadow:0 2px 8px rgba(0,0,0,.9);'+
-  'text-align:center;padding:6px 0;text-transform:uppercase;transition:opacity .4s;white-space:nowrap}\n'+
+  'text-align:center;padding:6px 0;text-transform:uppercase;transition:opacity .4s;white-space:nowrap;'+_zc('hint')+_disp('hint')+'}\n'+
 '@media(orientation:landscape){#hint{left:'+lO.pos.hint.x+'%;top:'+lO.pos.hint.y+'%}}\n'+
 
 // ── FLASH / SHAKE / PARTICLES ──────────────────────────
@@ -3449,19 +3561,19 @@ logoCss+
 '@keyframes flA{0%{opacity:0}12%{opacity:'+(s.flashIntensity/100).toFixed(2)+'}100%{opacity:0}}\n'+
 '.shake{animation:shA .42s ease-out}\n'+
 '@keyframes shA{0%,100%{transform:translate(0,0)}14%{transform:translate(-9px,4px)}28%{transform:translate(9px,-4px)}43%{transform:translate(-6px,6px)}57%{transform:translate(6px,-2px)}71%{transform:translate(-3px,2px)}}\n'+
-'.pt{position:fixed;border-radius:50%;pointer-events:none;z-index:5}\n'+
+'.pt{position:fixed;border-radius:50%;pointer-events:none;z-index:15}\n'+
 
 // ── LEVEL UP TEXT (z:11) ───────────────────────────────
-'#lv{position:fixed;left:'+pO.pos.lvtext.x+'%;top:'+pO.pos.lvtext.y+'%;transform:translate(-50%,-50%) scale(.3);font-size:'+Math.round(38*s.lvTextSize/100)+'px;font-weight:900;color:'+s.lvTextColor+';text-shadow:0 2px 12px rgba(0,0,0,.95),0 4px 2px rgba(0,0,0,.5),2px 2px 0 rgba(0,0,0,.3),-2px 2px 0 rgba(0,0,0,.3);opacity:0;pointer-events:none;z-index:11;text-align:center;letter-spacing:3px;white-space:nowrap}\n'+
+'#lv{position:fixed;left:'+pO.pos.lvtext.x+'%;top:'+pO.pos.lvtext.y+'%;transform:translate(-50%,-50%) scale(.3);font-size:'+Math.round(38*s.lvTextSize/100)+'px;font-weight:900;color:'+s.lvTextColor+';text-shadow:0 2px 12px rgba(0,0,0,.95),0 4px 2px rgba(0,0,0,.5),2px 2px 0 rgba(0,0,0,.3),-2px 2px 0 rgba(0,0,0,.3);opacity:0;pointer-events:none;'+_zc('lvtext')+_disp('lvtext')+'text-align:center;letter-spacing:3px;white-space:nowrap}\n'+
 '@media(orientation:landscape){#lv{left:'+lO.pos.lvtext.x+'%;top:'+lO.pos.lvtext.y+'%}}\n'+
 '.lv-show{animation:lvA 1.1s cubic-bezier(.3,1.55,.5,1) forwards}\n'+
 '@keyframes lvA{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}35%{opacity:1;transform:translate(-50%,-50%) scale(1.18)}60%{transform:translate(-50%,-50%) scale(.94)}80%,100%{opacity:1;transform:translate(-50%,-60%) scale(1)}}\n'+
 
 // ── CTA (z:12) — draggable via pos.cta ─────────────────
 (s.ctaBtnSrc
-  ?'#cta{position:fixed;left:'+pO.pos.cta.x+'%;top:'+pO.pos.cta.y+'%;transform:translate(-50%,-50%) translateY(22px);max-width:min(85vw,'+ctaMaxW+'px);background:none;border:none;box-shadow:none;padding:0;border-radius:0;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'+
+  ?'#cta{position:fixed;left:'+pO.pos.cta.x+'%;top:'+pO.pos.cta.y+'%;transform:translate(-50%,-50%) translateY(22px);max-width:min(85vw,'+ctaMaxW+'px);background:none;border:none;box-shadow:none;padding:0;border-radius:0;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;'+_zc('cta')+_disp('cta')+'}\n'+
    '#cta img{max-width:100%;display:block;filter:drop-shadow(0 4px 18px rgba(0,0,0,.55))}\n'
-  :'#cta{position:fixed;left:'+pO.pos.cta.x+'%;top:'+pO.pos.cta.y+'%;transform:translate(-50%,-50%) translateY(22px);width:min(85vw,'+ctaMaxW+'px);background:'+ctaBg+';color:'+ctaTextCol+';font-size:'+ctaFontPx+'px;font-weight:900;text-align:center;letter-spacing:2px;text-transform:uppercase;padding:'+ctaPadPx+'px 0;border-radius:'+ctaRadius+';border:none;cursor:pointer;box-shadow:'+ctaBoxShadow+';opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:12}\n'
+  :'#cta{position:fixed;left:'+pO.pos.cta.x+'%;top:'+pO.pos.cta.y+'%;transform:translate(-50%,-50%) translateY(22px);width:min(85vw,'+ctaMaxW+'px);background:'+ctaBg+';color:'+ctaTextCol+';font-size:'+ctaFontPx+'px;font-weight:900;text-align:center;letter-spacing:2px;text-transform:uppercase;padding:'+ctaPadPx+'px 0;border-radius:'+ctaRadius+';border:none;cursor:pointer;box-shadow:'+ctaBoxShadow+';opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;'+_zc('cta')+_disp('cta')+'}\n'
 )+
 '@media(orientation:landscape){#cta{left:'+lO.pos.cta.x+'%;top:'+lO.pos.cta.y+'%}}\n'+
 '#cta.vis{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) translateY(0)}\n'+
@@ -3478,7 +3590,7 @@ logoCss+
 '@media(orientation:landscape){#outro-img{'+imgSizeCss(lO.outroSize)+'}}\n'+
 '#skip-txt{position:absolute;bottom:20px;right:20px;font-size:13px;font-weight:700;color:rgba(255,255,255,.75);letter-spacing:2px;text-transform:uppercase;text-shadow:0 2px 6px rgba(0,0,0,.9);animation:skipPulse 1.5s ease-in-out infinite}\n'+
 '@keyframes skipPulse{0%,100%{opacity:.55}50%{opacity:1}}\n'+
-'#particles{position:fixed;inset:0;pointer-events:none;z-index:5}\n'+
+'#particles{position:fixed;inset:0;pointer-events:none;z-index:15}\n'+
 statsCss+
 gpCss+
 '</style>\n'+
@@ -3592,6 +3704,7 @@ loadPresetList();
 renderStatsRows();
 renderStarStepsUI();
 renderProjectOptions(S.projekt);
+renderLayers();
 updateNamePreview();
 refreshPreview();
 </script>
