@@ -80,7 +80,11 @@ input[type=range]{flex:1;height:4px;accent-color:var(--purple);cursor:pointer}
 .lib-btn{width:100%;background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;padding:5px 10px;cursor:pointer;margin-top:6px;transition:border-color .2s,color .2s;text-align:left;display:flex;align-items:center;gap:5px}
 .lib-btn:hover{border-color:var(--purple);color:var(--text)}
 .lib-count{margin-left:auto;background:var(--surface2);border-radius:10px;padding:1px 7px;font-size:10px;color:var(--muted)}
-.rc-btn{justify-content:center;text-align:center;border-color:rgba(240,192,64,.5);color:var(--gold)}
+.rc-wrap{display:flex;gap:6px;align-items:stretch;margin-top:6px}
+.rc-wrap .lib-btn{margin-top:0}
+.rc-loop{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);cursor:pointer;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:0 9px}
+.rc-loop input{cursor:pointer}
+.rc-btn{flex:1;justify-content:center;text-align:center;border-color:rgba(240,192,64,.5);color:var(--gold)}
 .rc-btn:hover{border-color:var(--gold);color:var(--gold)}
 
 .snd-row{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;cursor:pointer;transition:border-color .2s}
@@ -396,9 +400,9 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
         <div class="sl-row"><span class="webp-q-lbl">Max width</span><input type="range" id="vid-w" min="128" max="1024" step="32" value="512" oninput="onVidOpt()"><div class="sl-val" id="vid-w-val">512</div></div>
         <div class="sl-row"><span class="webp-q-lbl">FPS</span><input type="range" id="vid-fps" min="8" max="30" value="15" oninput="onVidOpt()"><div class="sl-val" id="vid-fps-val">15</div></div>
         <div class="sl-row"><span class="webp-q-lbl">Colors</span><input type="range" id="vid-colors" min="0" max="256" step="16" value="256" oninput="onVidOpt()"><div class="sl-val" id="vid-colors-val">256</div></div>
-        <label class="webp-toggle-lbl" style="font-weight:400"><input type="checkbox" id="vid-loop" onchange="onVidOpt()"><span class="webp-dim">Loop animation (off = play once, hold final frame)</span></label>
+        <label class="webp-toggle-lbl" style="font-weight:400"><input type="checkbox" id="vid-loop" onchange="onVidOpt()"><span class="webp-dim">Loop new videos by default (off = play once)</span></label>
       </div>
-      <div class="fhint" style="margin-top:0">Transparent WebM/MP4 → frames → APNG animation. Lower width / FPS / colors = smaller. Colors 0 = lossless. Opaque videos are left as-is.</div>
+      <div class="fhint" style="margin-top:0">Transparent WebM/MP4 → frames → APNG animation. Lower width / FPS / colors = smaller. Colors 0 = lossless. Opaque videos are left as-is. Each video slot also has its own <strong>🔁 Loop</strong> toggle — turn it on for the final upgraded unit so it keeps moving.</div>
     </div>
   </details>
 
@@ -1578,7 +1582,7 @@ function extractFrames(f,onProgress){
 var _srcVideo={};
 
 function compressVideo(k,f){
-  _srcVideo[k]={file:f, frames:null, key:''};
+  _srcVideo[k]={file:f, frames:null, key:'', loop:vidLoop}; // loop defaults from Upload settings
   runVideoCompression(k);
 }
 function recompressVideo(k){
@@ -1602,9 +1606,9 @@ function runVideoCompression(k){
     var delays=[]; for(var j=0;j<ex.count;j++) delays.push(Math.round(1000/vidFps));
     setTimeout(function(){ // let the status paint before the sync encode
       var buf=UPNG.encode(ex.frames, ex.w, ex.h, vidColors, delays);
-      if(!vidLoop) setApngPlays(buf,1); // play once, hold final frame
+      if(!rec.loop) setApngPlays(buf,1); // play once, hold final frame (loop=on → keep infinite)
       bufToDataUrl(buf,'image/png').then(function(u){
-        var note='✓ '+ex.count+'f · '+ex.w+'×'+ex.h+' · '+(vidColors===0?'lossless':vidColors+'c')+(f.size?' · −'+Math.round((1-buf.byteLength/f.size)*100)+'%':'');
+        var note='✓ '+ex.count+'f · '+ex.w+'×'+ex.h+' · '+(vidColors===0?'lossless':vidColors+'c')+(rec.loop?' · 🔁':'')+(f.size?' · −'+Math.round((1-buf.byteLength/f.size)*100)+'%':'');
         applyAsset(k,{src:u,size:buf.byteLength,name:f.name.replace(/\.\w+$/,'')+'.png',note:note},{noLib:true});
         showRecompress(k);
       });
@@ -1617,20 +1621,25 @@ function runVideoCompression(k){
     .then(encode)
     .catch(function(){ fileToDataUrl(f).then(function(u){ applyAsset(k,{src:u,size:f.size,name:f.name,note:'⚠️ compress failed — kept original'},{noLib:true}); }); });
 }
-// show/refresh the "Recompress" button under a video slot
+// show/refresh the per-slot Loop toggle + Recompress button under a video slot
 function showRecompress(k){
   var sz=document.getElementById('sz-'+k); if(!sz)return;
-  var btn=document.getElementById('rc-'+k);
-  if(!btn){
-    btn=document.createElement('button');
-    btn.id='rc-'+k; btn.className='lib-btn rc-btn';
-    btn.textContent='↻ Recompress with current settings';
-    btn.onclick=function(){ recompressVideo(k); };
-    sz.parentNode.insertBefore(btn, sz.nextSibling);
+  var wrap=document.getElementById('rcw-'+k);
+  if(!wrap){
+    wrap=document.createElement('div');
+    wrap.id='rcw-'+k; wrap.className='rc-wrap';
+    wrap.innerHTML=
+      '<label class="rc-loop" title="Loop this animation forever — e.g. the final upgraded unit. Off = play once and hold the last frame.">'+
+        '<input type="checkbox" id="rcl-'+k+'" onchange="setSlotLoop(\''+k+'\',this.checked)"> 🔁 Loop</label>'+
+      '<button id="rc-'+k+'" class="lib-btn rc-btn" onclick="recompressVideo(\''+k+'\')">↻ Recompress</button>';
+    sz.parentNode.insertBefore(wrap, sz.nextSibling);
   }
-  btn.style.display='';
+  var cb=document.getElementById('rcl-'+k);
+  if(cb && _srcVideo[k]) cb.checked=!!_srcVideo[k].loop;
+  wrap.style.display='';
 }
-function hideRecompress(k){ var b=document.getElementById('rc-'+k); if(b)b.style.display='none'; }
+function hideRecompress(k){ var w=document.getElementById('rcw-'+k); if(w)w.style.display='none'; }
+function setSlotLoop(k,checked){ if(_srcVideo[k]){ _srcVideo[k].loop=checked; recompressVideo(k); } }
 
 // bytes encoded in a base64 data URL
 function dataUrlBytes(u){
