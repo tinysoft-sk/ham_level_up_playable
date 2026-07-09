@@ -381,6 +381,7 @@ input[type=color].cp{width:32px;height:28px;padding:1px;border-radius:6px;border
         <div class="sl-row"><span class="webp-q-lbl">Max width</span><input type="range" id="vid-w" min="128" max="1024" step="32" value="512" oninput="onVidOpt()"><div class="sl-val" id="vid-w-val">512</div></div>
         <div class="sl-row"><span class="webp-q-lbl">FPS</span><input type="range" id="vid-fps" min="8" max="30" value="15" oninput="onVidOpt()"><div class="sl-val" id="vid-fps-val">15</div></div>
         <div class="sl-row"><span class="webp-q-lbl">Colors</span><input type="range" id="vid-colors" min="0" max="256" step="16" value="256" oninput="onVidOpt()"><div class="sl-val" id="vid-colors-val">256</div></div>
+        <label class="webp-toggle-lbl" style="font-weight:400"><input type="checkbox" id="vid-loop" onchange="onVidOpt()"><span class="webp-dim">Loop animation (off = play once, hold final frame)</span></label>
       </div>
       <div class="fhint" style="margin-top:0">Transparent WebM/MP4 → frames → APNG animation. Lower width / FPS / colors = smaller. Colors 0 = lossless. Opaque videos are left as-is.</div>
     </div>
@@ -1381,13 +1382,14 @@ function onWebpToggle(cb){
 function onWebpQuality(v){ webpQuality=v/100; document.getElementById('webp-q-val').textContent=v+'%'; }
 
 // ── Video → transparent APNG compression (editor-only settings) ──
-var vidEnabled=true, vidMaxW=512, vidFps=15, vidColors=256;
+var vidEnabled=true, vidMaxW=512, vidFps=15, vidColors=256, vidLoop=false;
 var VID_MAX_FRAMES=90; // safety cap on total frames
 function onVidToggle(cb){ vidEnabled=cb.checked; var o=document.getElementById('vid-opts'); if(o)o.style.display=vidEnabled?'':'none'; }
 function onVidOpt(){
   vidMaxW=+document.getElementById('vid-w').value;
   vidFps=+document.getElementById('vid-fps').value;
   vidColors=+document.getElementById('vid-colors').value;
+  vidLoop=document.getElementById('vid-loop').checked;
   document.getElementById('vid-w-val').textContent=vidMaxW;
   document.getElementById('vid-fps-val').textContent=vidFps;
   document.getElementById('vid-colors-val').textContent=vidColors===0?'Lossless':vidColors;
@@ -1398,6 +1400,21 @@ function bufToDataUrl(buf,mime){ return new Promise(function(res){ var r=new Fil
 function tileStatus(k,msg){
   var el=document.getElementById('sz-'+k); if(!el)return;
   el.className='fsize shown'; el.style.color='var(--gold)'; el.textContent='⏳ '+msg;
+}
+
+// Set the APNG loop count (num_plays in the acTL chunk) and fix its CRC.
+// plays=1 → animation runs once and holds the final frame; 0 → infinite.
+var _APNG_CRC=(function(){var t=new Uint32Array(256);for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
+function _crc32(u,start,len){var c=0xFFFFFFFF;for(var i=0;i<len;i++)c=(c>>>8)^_APNG_CRC[(c^u[start+i])&0xFF];return (c^0xFFFFFFFF)>>>0;}
+function setApngPlays(buf,plays){
+  var u=new Uint8Array(buf), i=-1;
+  for(var p=8;p<u.length-4;p++){ if(u[p]===0x61&&u[p+1]===0x63&&u[p+2]===0x54&&u[p+3]===0x4C){ i=p; break; } } // "acTL"
+  if(i<0) return buf; // not animated / not found — leave as-is
+  var np=i+8; // skip type(4)+num_frames(4)
+  u[np]=(plays>>>24)&255; u[np+1]=(plays>>>16)&255; u[np+2]=(plays>>>8)&255; u[np+3]=plays&255;
+  var c=_crc32(u,i,12), cp=i+12; // CRC over type + 8 data bytes
+  u[cp]=(c>>>24)&255; u[cp+1]=(c>>>16)&255; u[cp+2]=(c>>>8)&255; u[cp+3]=c&255;
+  return buf;
 }
 
 // WebM/MP4 duration can report Infinity until seeked — force it to resolve
@@ -1460,6 +1477,7 @@ function compressVideo(k,f){
     // defer so the status paint lands before the (sync) encode blocks
     return new Promise(function(res){ setTimeout(function(){
       var buf=UPNG.encode(ex.frames, ex.w, ex.h, vidColors, delays);
+      if(!vidLoop) setApngPlays(buf,1); // play once, hold final frame
       bufToDataUrl(buf,'image/png').then(function(u){
         var note='✓ '+ex.count+'f APNG'+(f.size?' −'+Math.round((1-buf.byteLength/f.size)*100)+'%':'');
         applyAsset(k,{src:u,size:buf.byteLength,name:f.name.replace(/\.\w+$/,'')+'.png',note:note});
